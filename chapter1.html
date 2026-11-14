@@ -908,7 +908,7 @@ function tabQuests(mb){
 function claimQ(q){S.claimed[q.id]=1;S.coins+=q.r.coins;S.totalCoins+=q.r.coins;if(q.r.item)give(q.r.item);if(q.r.fp)addFP(q.r.fp);sfxPlay("coin");toast("Goal complete! +🪙"+q.r.coins);celebrate(q.t);paintHud();renderMenu()}
 function tabLog(mb){
   h4(mb,"Flowers ("+Object.keys(S.flowerLog).length+"/4)");FN.forEach(function(n,i){mb.appendChild(mrow(S.flowerLog[i]?FE[i]:"❔",S.flowerLog[i]?n[0].toUpperCase()+n.slice(1):"???","",null,null,0,!!S.flowerLog[i]))});
-  var fl=["carp","sunfish","perch","eel","lcarp","koi","dfish","sardine","crab","tuna","squid","puffer"];
+  var fl=["carp","sunfish","perch","eel","lcarp","koi","dfish","sardine","crab","tuna","squid","puffer"].filter(function(f){return CH2||f!=="lcarp"});
   h4(mb,"Fish ("+Object.keys(S.fishLog).filter(function(k){return fl.indexOf(k)>-1}).length+"/"+fl.length+")");fl.forEach(function(id){mb.appendChild(mrow(S.fishLog[id]?IT[id].e:"❔",S.fishLog[id]?IT[id].n+" ×"+S.fishLog[id]:"???",S.fishLog[id]?"":(id==="koi"?"At the lake, 8 pm to 5 am.":id==="dfish"?"At the lake, 8 pm to 5 am, only while it rains.":""),null,null,0,!!S.fishLog[id]))});
   h4(mb,"Dishes");RECIPES.forEach(function(r){mb.appendChild(mrow(S.dishLog[r.id]?r.e:"❔",S.dishLog[r.id]?r.n+" ×"+S.dishLog[r.id]:"???","",null,null,0,!!S.dishLog[r.id]))});
   if(typeof BOOKS!=="undefined"){var bk=BOOKS.filter(function(b){return !b.c2||CH2}),rd=bk.filter(function(b){return S.seen["bk_"+b.id]}).length;
@@ -1412,7 +1412,7 @@ vnpcPush=function(dr){_vp0(dr);if(typeof OPNX!=="undefined"&&OPNX)return;vnList(
 (function(){var st=document.createElement("style");st.textContent=".mem{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}.mem button{aspect-ratio:1;font-size:1.9rem;border-radius:12px;border:3px solid #6b4426;background:#f3d9a6;cursor:pointer;transition:transform .25s;padding:0}.mem button.up{background:#fff8e8;transform:rotateY(0)}.mem button.ok{background:#d6f5c9;border-color:#2f9d5a}.ff{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px auto;max-width:240px}.ff button{aspect-ratio:1.3;border-radius:16px;border:4px solid #0004;cursor:pointer;font-size:1.6rem;opacity:.55;transition:opacity .1s,transform .1s,box-shadow .1s}.ff button.lit{opacity:1;transform:scale(1.06);box-shadow:0 0 28px 8px #fff9}";document.head.appendChild(st)})();
 function SECRET(){return CH2?{id:"sx",place:[24,8],where:"Doodi's hidden treehouse",title:"The Secret Treehouse"}:{id:"sx",place:[50,42],where:"the Wishing Cove",title:"The Wishing Cove"}}
 function allLogged(){
-  var fl=["carp","sunfish","perch","eel","lcarp","koi","dfish","sardine","crab","tuna","squid","puffer"];
+  var fl=["carp","sunfish","perch","eel","lcarp","koi","dfish","sardine","crab","tuna","squid","puffer"].filter(function(f){return CH2||f!=="lcarp"});
   if(Object.keys(S.flowerLog).length<4)return false;
   for(var i=0;i<fl.length;i++)if(!S.fishLog[fl[i]])return false;
   for(var j=0;j<RECIPES.length;j++)if(!S.dishLog[RECIPES[j].id])return false;
