@@ -3311,6 +3311,7 @@ if(window.__coopGuestMode){try{var _SP=Storage.prototype;_SP.setItem=function(){
 "body.coopg #qscard,body.coopg #exitch{display:none!important}"+
 "#cotag{position:absolute;left:50%;transform:translateX(-50%);bottom:8px;z-index:60;background:#000c;color:#fff;font:800 .78rem Figtree,system-ui,sans-serif;border-radius:999px;padding:5px 12px;pointer-events:none;white-space:nowrap}"+
 "#cotag.me{background:#ffd34d;color:#2a1a10;bottom:auto;top:8px}"+
+"#cosnd{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 10px);z-index:2147481000;background:#ffd34d;color:#2a1a10;border:0;border-radius:999px;padding:12px 20px;font:900 1rem Figtree,system-ui,sans-serif;box-shadow:0 4px 0 #0004,0 0 24px #ffd34d88;cursor:pointer;white-space:nowrap;animation:cosndp 1.2s ease-in-out infinite}@keyframes cosndp{50%{transform:translateX(-50%) scale(1.06)}}"+
 "#cohint{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 6px);z-index:350;background:#000d;color:#fff;font:800 .8rem Figtree,system-ui,sans-serif;border-radius:999px;padding:6px 14px;pointer-events:none;opacity:0;transition:opacity .25s;white-space:nowrap}#cohint.on{opacity:1}";
 document.head.appendChild(st)})();
 
@@ -3413,6 +3414,9 @@ function coopAudioResync(){COOP.aud.forEach(function(a){if(a.__on&&!a.paused)coo
 /* ---------- partner (guest) ---------- */
 var COOP_SILENT="data:audio/wav;base64,UklGRvQHAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YdAHAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==";
 function coopGuestInit(){var code=coopJoinHash();COOP.role="guest";COOP.code=code;document.body.classList.add("coopg");
+  /* the partner's page never plays its own music (the title screen used to start it on the first tap); only what the host sends */
+  try{playSong=function(){return false};bgmSync=function(){}}catch(e){}
+  (function(){var P=HTMLMediaElement.prototype,_pl=P.play;P.play=function(){if(this instanceof HTMLVideoElement||this.__pool)return _pl.apply(this,arguments);try{this.pause()}catch(e){}return Promise.resolve()}})();
   try{if(!S)S=fresh()}catch(e){try{S=fresh()}catch(x){}}try{S.music=true;S.sfx=true}catch(e){}
   var st=$("stage");[].slice.call(st.children).forEach(function(c){c.remove()});
   var v=document.createElement("video");v.id="covid";v.autoplay=true;v.muted=true;v.playsInline=true;v.setAttribute("playsinline","");st.appendChild(v);
@@ -3429,6 +3433,9 @@ function coopGuestInit(){var code=coopJoinHash();COOP.role="guest";COOP.code=cod
     if(b||k==="Escape"||k==="q"||k==="Q"||k==="r"||k==="R"){e.preventDefault();e.stopImmediatePropagation();if(b)coopSend({t:"btn",b:b})}},true);
   var mini=document.querySelector(".mini[style*='center']");if(mini)mini.textContent="Co-op: you control your own hero · Arrows/WASD move · Space = A"+(COOP_CH===5?" · F skill":"");
   window.addEventListener("pagehide",function(){coopSend({t:"bye"})});
+  /* phones only allow sound to start from a tap: every tap also restarts anything that should be playing but got blocked */
+  ["pointerdown","touchend","keydown"].forEach(function(ev){window.addEventListener(ev,function(){try{var c=ac();if(c&&c.state!=="running")c.resume()}catch(e){}
+    var g=COOP.gmap||{};Object.keys(g).forEach(function(id){var a=g[id];if(a&&a.paused&&a.__src)coopTryPlay(a)})},true)});
   setInterval(function(){if(COOP.on&&COOP.lastMsg&&Date.now()-COOP.lastMsg>9000)coopGuestLost()},1000);
   var lx=9,ly=9,lt=0;setInterval(function(){var dx=(held[1]?1:0)-(held[3]?1:0),dy=(held[2]?1:0)-(held[0]?1:0);if(dx&&dy){dx*=.72;dy*=.72}var J=window.__joy;if(J&&J.on){dx=J.x;dy=J.y}
     var now=Date.now();if(Math.abs(dx-lx)>.02||Math.abs(dy-ly)>.02||now-lt>400){lx=dx;ly=dy;lt=now;coopSend({t:"in",x:+dx.toFixed(3),y:+dy.toFixed(3)})}},33);
@@ -3467,18 +3474,24 @@ function coopGuestData(m,code){if(!m||!m.t)return;COOP.lastMsg=Date.now();
   else if(m.t==="auv"){var a2=COOP.gmap&&COOP.gmap[m.i];if(a2)coopVol(a2,m.v)}}
 /* audio on the partner's device: a small pool of players unlocked by the join tap (phones need that) */
 function coopPoolUnlock(){COOP.pool=COOP.pool||[];var c=null;try{c=ac()}catch(e){}
-  for(var i=COOP.pool.length;i<12;i++){var a=new Audio();a.preload="auto";a.src=COOP_SILENT;a.__hid=0;
+  for(var i=COOP.pool.length;i<12;i++){var a=new Audio();a.__pool=1;a.preload="auto";a.src=COOP_SILENT;a.__hid=0;
     try{if(c){var n=c.createMediaElementSource(a),g=c.createGain();n.connect(g);g.connect(c.destination);a.__g=g}}catch(e){}
     try{var p=a.play();if(p&&p.catch)p.catch(function(){})}catch(e){}COOP.pool.push(a)}}
 function coopVol(a,v){v=Math.max(0,Math.min(1,+v||0));if(a.__g){try{a.__g.gain.setTargetAtTime(v,a.__g.context.currentTime,.03)}catch(e){a.__g.gain.value=v}try{a.volume=1}catch(e){}}else{try{a.volume=v}catch(e){}}}
 function coopSrcOf(k){if(k.indexOf("d:")!==0)return k;var c=[];try{c.push(VICT)}catch(e){}try{c.push(OPN_SRC)}catch(e){}try{for(var t in TRK)c.push(TRK[t])}catch(e){}
   for(var i=0;i<c.length;i++){var s=c[i];if(typeof s==="string"&&s.indexOf("data:")===0&&"d:"+s.length+":"+s.slice(-48)===k)return s}return null}
+/* if the phone refuses to start a song, a big button appears; one tap starts everything that should be playing */
+function coopTryPlay(a){try{var p=a.play();if(p&&p.catch)p.then(function(){coopSoundOk()}).catch(function(e){if(e&&e.name==="NotAllowedError")coopSoundBtn()})}catch(e){}}
+function coopSoundBtn(){if(document.getElementById("cosnd"))return;var b=document.createElement("button");b.id="cosnd";b.type="button";b.textContent="🔇 Tap here for sound";
+  b.addEventListener("pointerdown",function(e){e.preventDefault();e.stopPropagation();coopPoolUnlock();try{var c=ac();if(c&&c.state!=="running")c.resume()}catch(x){}var g=COOP.gmap||{};Object.keys(g).forEach(function(id){var a=g[id];if(a&&a.__src&&a.paused)coopTryPlay(a)});setTimeout(function(){var still=Object.keys(COOP.gmap||{}).some(function(id){var a=COOP.gmap[id];return a&&a.__src&&a.paused});if(!still)coopSoundOk()},400)});
+  document.body.appendChild(b)}
+function coopSoundOk(){var b=document.getElementById("cosnd");if(b)b.remove()}
 function coopGuestAu(m){COOP.gmap=COOP.gmap||{};var src=coopSrcOf(m.s);if(!src)return;var a=COOP.gmap[m.i];
   if(!a){COOP.pool=COOP.pool||[];for(var i=0;i<COOP.pool.length;i++){var q=COOP.pool[i];if(!q.__hid||!COOP.gmap[q.__hid]){a=q;break}}
     if(!a){for(var j=0;j<COOP.pool.length;j++){var q2=COOP.pool[j];if(q2.paused||q2.ended){a=q2;break}}}
-    if(!a){a=new Audio();COOP.pool.push(a)}
+    if(!a){a=new Audio();a.__pool=1;COOP.pool.push(a)}
     if(a.__hid&&COOP.gmap[a.__hid]===a)delete COOP.gmap[a.__hid];a.__hid=m.i;COOP.gmap[m.i]=a}
-  try{try{var c0=ac();if(c0&&c0.state!=="running")c0.resume()}catch(x){}if(a.__src!==src){a.src=src;a.__src=src}a.loop=!!m.l;coopVol(a,m.v);if(m.c>.5&&Math.abs((a.currentTime||0)-m.c)>.4)a.currentTime=m.c;var p=a.play();if(p&&p.catch)p.catch(function(){})}catch(e){}}
+  try{try{var c0=ac();if(c0&&c0.state!=="running")c0.resume()}catch(x){}if(a.__src!==src){a.src=src;a.__src=src}a.loop=!!m.l;coopVol(a,m.v);if(m.c>.5&&Math.abs((a.currentTime||0)-m.c)>.4)a.currentTime=m.c;coopTryPlay(a)}catch(e){}}
 /* keep the partner's copy in step with the host's page without rebuilding it (so animations don't restart) */
 function coopMorph(dst,src){var a=dst.childNodes,b=src.childNodes,i;
   for(i=0;i<b.length;i++){var s=b[i],d=a[i];
