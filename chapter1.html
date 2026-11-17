@@ -1758,7 +1758,7 @@ tabLog=function(mb){_tl(mb);if(MW<=OW)return;S.disc=S.disc||{};h4(mb,"Places & L
   XZ.forEach(function(z){var d=S.disc[z.id];mb.appendChild(mrow(d?z.e:"❔",d?z.name:"???",d?z.lore:"Not discovered yet. Explore the east side of the valley.",null,null,0,!!d))})};
 /* ---------- backup code (copy / restore progress) ---------- */
 var _tmB=tabMore;
-tabMore=function(mb){_tmB(mb);mb.appendChild(mrow("📦","Backup code","Copy a code that keeps your progress safe. Paste one later to restore it.","Open",openBackup))};
+tabMore=function(mb){_tmB(mb);mb.appendChild(mrow("💾","Save code","One code for the whole game. Copy it, or paste one to restore your progress.","Open",function(){openBackup()}))};
 function openBackup(){
   try{save()}catch(e){}
   var raw=ls(SAVEKEY)||"",code="";try{code=btoa(unescape(encodeURIComponent(raw)))}catch(e){}
@@ -2413,7 +2413,59 @@ try{var hb=document.createElement("button");hb.id="hpm";hb.type="button";hb.text
 try{var _nb=function(e){e.preventDefault()};["selectstart","contextmenu","gesturestart","gesturechange","dragstart"].forEach(function(n){document.addEventListener(n,_nb,{passive:false})});
 var _ct=document.getElementById("ctl"),_cv=document.getElementById("cv");[_ct].forEach(function(el){if(!el)return;["touchstart","touchmove","touchend"].forEach(function(n){el.addEventListener(n,function(e){if(e.cancelable)e.preventDefault()},{passive:false})})});
 var _st=document.createElement("style");_st.textContent="#ctl,#ctl *,#cv{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important;touch-action:none!important;-webkit-tap-highlight-color:transparent}#ctl button{-webkit-appearance:none;appearance:none}";document.head.appendChild(_st)}catch(e){}
+openBackup=function(){try{save()}catch(e){}if(window.__dvSaveCode)window.__dvSaveCode()};
 requestAnimationFrame(frame);
 title();
+})();
+</script>
+<script>/* ===== One save code for the whole game: every chapter, her lantern, the names, the album, the ending and the settings.
+   Copy it on one device, paste it on another (or on the GitHub site) and everything comes back. ===== */
+(function(){
+if(window.__dvSaveCode)return;
+var PRE="DVG1:",PREZ="DVGZ:";
+function keep(k){return /^(danoya-valley|dv)/.test(k)&&!/^dv_(cut|back)$/.test(k)&&!/cutscene-preview/.test(k)}
+function collect(){var o={};try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(keep(k))o[k]=localStorage.getItem(k)}}catch(e){}return o}
+function b64(bytes){var s="";for(var i=0;i<bytes.length;i+=0x8000)s+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));return btoa(s)}
+function unb64(t){var s=atob(t),u=new Uint8Array(s.length);for(var i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u}
+function enc(o){var json=JSON.stringify({v:1,t:Date.now(),k:o}),bytes=new TextEncoder().encode(json);
+  if(window.CompressionStream){try{var cs=new Blob([bytes]).stream().pipeThrough(new CompressionStream("deflate-raw"));return new Response(cs).arrayBuffer().then(function(b){return PREZ+b64(new Uint8Array(b))}).catch(function(){return PRE+b64(bytes)})}catch(e){}}
+  return Promise.resolve(PRE+b64(bytes))}
+function dec(code){code=(code||"").replace(/\s+/g,"");
+  if(code.indexOf(PREZ)===0){if(!window.DecompressionStream)return Promise.reject(new Error("old"));var ds=new Blob([unb64(code.slice(5))]).stream().pipeThrough(new DecompressionStream("deflate-raw"));return new Response(ds).text().then(function(t){return JSON.parse(t)})}
+  if(code.indexOf(PRE)===0)return Promise.resolve(JSON.parse(new TextDecoder().decode(unb64(code.slice(5)))));
+  /* an older single-chapter code from Chapter 1 or 2 */
+  return new Promise(function(res){var j=decodeURIComponent(escape(atob(code)));var o=JSON.parse(j);if(!o||o.v!==1)throw new Error("bad");var key=/chapter2/.test(location.pathname)||o.prof||o.quiz?"danoya-valley-ch2-v1":"danoya-valley-v1";if(/chapter1/.test(location.pathname))key="danoya-valley-v1";var k={};k[key]=j;if(key==="danoya-valley-ch2-v1"&&o.lantern&&typeof o.lantern==="object"){var hasL=null;try{hasL=localStorage.getItem("dv_lantern")}catch(e){}if(!hasL)k.dv_lantern=JSON.stringify(o.lantern)}res({v:1,old:1,k:k})})}
+function summary(o){var k=o||{},n=[];if(k["danoya-valley-v1"])n.push("Chapter 1");if(k["danoya-valley-ch2-v1"])n.push("Chapter 2");if(k.dv3)n.push("Chapter 3");if(k.dv4)n.push("Chapter 4");if(k.dv5)n.push("Chapter 5");
+  var x=[];if(k.dv_lantern)x.push("her lantern");if(k.dv_names==="1")x.push("the 15 names");if(k.dv_album)x.push("the album");if(k.dv_done==="1")x.push("the ending");
+  return (n.length?n.join(", "):"no chapters yet")+(x.length?" · plus "+x.join(", "):"")}
+var css="#dvsc{position:fixed;inset:0;z-index:2147483000;background:#000a;display:grid;place-items:center;padding:16px}"+
+"#dvsc .c{background:#fff6ee;color:#2a1a10;border-radius:18px;padding:18px;max-width:380px;width:100%;max-height:92vh;overflow:auto;box-shadow:0 10px 30px #0008;font:600 .95rem Figtree,Nunito,system-ui,sans-serif;display:flex;flex-direction:column;gap:9px;text-align:left}"+
+"#dvsc h3{margin:0;font:400 1.25rem Bungee,Impact,sans-serif;text-align:center}#dvsc h4{margin:6px 0 0;font:900 .95rem Figtree,Nunito,system-ui,sans-serif}#dvsc p{margin:0;line-height:1.4}#dvsc small{opacity:.75}"+
+"#dvsc textarea{width:100%;height:92px;box-sizing:border-box;font:11px/1.35 ui-monospace,Menlo,monospace;border:2px solid #c79a62;border-radius:10px;padding:6px;background:#fff;color:#2a1a10;resize:vertical}"+
+"#dvsc button{font:800 .95rem Figtree,Nunito,system-ui,sans-serif;border:0;border-radius:12px;padding:11px;cursor:pointer;background:#ffd34d;color:#2a1a10;box-shadow:0 3px 0 #0003}#dvsc button.g{background:#eee2cf}#dvsc button.r{background:#e8836e;color:#fff}"+
+"#dvsc .m{min-height:1.2em;font-weight:800;color:#2f7d4a}#dvsc .m.bad{color:#c2412e}#dvsc hr{border:0;border-top:2px dashed #e2cfae;margin:6px 0}";
+function ui(){var st=document.getElementById("dvscs");if(!st){st=document.createElement("style");st.id="dvscs";st.textContent=css;document.head.appendChild(st)}
+  var w=document.createElement("div");w.id="dvsc";w.innerHTML='<div class="c" role="dialog" aria-label="Save code"><h3>💾 Save code</h3>'+
+  '<p>One code for the <b>whole game</b>: every chapter, her lantern, the names, the album and the ending. Copy it and keep it somewhere safe. A newer code always includes everything from the older ones.</p>'+
+  '<h4>Your code</h4><small id="dvsum">Reading your progress…</small><textarea id="dvc" readonly></textarea><button type="button" id="dvcp">📋 Copy code</button><div class="m" id="dvm1"></div>'+
+  '<hr><h4>Restore a code</h4><p><small>Paste a code from another device, from the other website, or an older Chapter 1 or 2 code. This replaces the progress on this device.</small></p><textarea id="dvr" placeholder="Paste a code here"></textarea><button type="button" class="r" id="dvrs">Restore code</button><div class="m" id="dvm2"></div>'+
+  '<button type="button" class="g" id="dvx">Close</button></div>';
+  document.body.appendChild(w);
+  ["keydown","keyup","keypress"].forEach(function(ev){w.addEventListener(ev,function(e){e.stopPropagation()})});
+  w.addEventListener("pointerdown",function(e){e.stopPropagation()});
+  w.onclick=function(e){if(e.target===w)w.remove()};
+  var ta=w.querySelector("#dvc"),m1=w.querySelector("#dvm1"),m2=w.querySelector("#dvm2"),rt=w.querySelector("#dvr"),armed=0,pend=null;
+  var data=collect();w.querySelector("#dvsum").textContent="Includes: "+summary(data);enc(data).then(function(c){ta.value=c});
+  w.querySelector("#dvcp").onclick=function(){ta.select();var ok=false;try{navigator.clipboard.writeText(ta.value).then(function(){m1.className="m";m1.textContent="Copied! Keep it in your notes or messages."},function(){m1.className="m";m1.textContent="Select the code above and copy it."});ok=true}catch(e){}if(!ok){m1.className="m";m1.textContent="Select the code above and copy it."}};
+  w.querySelector("#dvrs").onclick=function(){var btn=this;
+    if(armed&&pend){try{if(!pend.old)Object.keys(collect()).forEach(function(k){localStorage.removeItem(k)});var k=pend.k||{};Object.keys(k).forEach(function(x){if(keep(x)&&typeof k[x]==="string")localStorage.setItem(x,k[x])});
+        m2.className="m";m2.textContent="Restored! Reloading…";setTimeout(function(){location.reload()},700)}catch(e){m2.className="m bad";m2.textContent="Couldn't restore here (storage blocked?)."}return}
+    m2.className="m";m2.textContent="Checking…";
+    dec(rt.value).then(function(o){if(!o||!o.k||typeof o.k!=="object")throw 0;pend=o;armed=1;btn.textContent="Yes, replace my progress";
+      m2.className="m";m2.textContent="This code has: "+summary(o.k)+(o.t?" (made "+new Date(o.t).toLocaleString()+")":"")+(o.old?". It's an older one-chapter code, so it only adds that chapter and keeps everything else":"")+". Press again to restore.";
+      setTimeout(function(){armed=0;btn.textContent="Restore code"},12000)})
+    .catch(function(e){m2.className="m bad";m2.textContent=e&&e.message==="old"?"This browser is too old to open that code. Try another browser.":"That code doesn't look right. Check it was copied in full."})};
+  w.querySelector("#dvx").onclick=function(){w.remove()}}
+window.__dvSaveCode=function(){var o=document.getElementById("dvsc");if(o)o.remove();ui()};
 })();
 </script>
