@@ -116,6 +116,58 @@ html[data-lay="desktop"] .wrap{max-width:min(calc(100vw - 24px),calc((100vh - 11
 html[data-lay="desktop"] #ctl{display:none}
 html[data-lay="desktop"] .wrap>p.mini{font-size:.95rem}
 </style>
+<script>/* Co-op picture sync. On the host, every drawing command the game makes is noted down while co-op is on;
+   the partner's device replays the same commands on its own copy of the screen, so it looks exactly
+   like the host's: same pixels, full speed, nothing blurred by video. */
+(function(){
+var R=window.__rec={on:false,buf:[],n:0,g:0,sent:{},gsent:{}};
+var CP=CanvasRenderingContext2D.prototype,HP=HTMLCanvasElement.prototype,GP=window.CanvasGradient&&CanvasGradient.prototype;
+function rid(c){if(!c.__rid){c.__rid=++R.n;try{if(!c.hasAttribute("data-rid"))c.setAttribute("data-rid",c.__rid)}catch(e){}}return c.__rid}
+R.rid=rid;
+var gc=HP.getContext;HP.getContext=function(t){var x=gc.apply(this,arguments);if(x&&t==="2d")rid(this);return x};
+/* make sure the partner has a canvas's current picture before we send changes to it */
+var ST=["fillStyle","strokeStyle","globalAlpha","lineWidth","lineCap","lineJoin","miterLimit","font","textAlign","textBaseline","direction","imageSmoothingEnabled","globalCompositeOperation","shadowBlur","shadowColor","shadowOffsetX","shadowOffsetY","filter","lineDashOffset","letterSpacing"];
+function need(c){var id=rid(c);if(R.sent[id])return id;R.sent[id]=1;var u="";try{u=c.width&&c.height?c.toDataURL():""}catch(e){}R.buf.push([id,"#S",c.width,c.height,u]);
+  try{var x=c.getContext("2d");ST.forEach(function(p){if(p in x){var v=x[p];R.buf.push([id,"="+p,enc(v)])}});var m=x.getTransform();R.buf.push([id,"setTransform",m.a,m.b,m.c,m.d,m.e,m.f]);if(x.getLineDash)R.buf.push([id,"setLineDash",x.getLineDash()])}catch(e){}
+  return id}
+function enc(v){if(v==null||typeof v!=="object")return v;
+  if(v instanceof HTMLCanvasElement)return {c:need(v)};
+  if(GP&&v instanceof CanvasGradient&&v.__gd){var d=v.__gd;if(R.gsent[d.id]!==d.s.length){R.gsent[d.id]=d.s.length;R.buf.push([0,"#G",d.id,d.k,d.a,d.s])}return {g:d.id}}
+  if(Array.isArray(v))return v.map(enc);
+  if(window.DOMMatrix&&v instanceof DOMMatrix)return {m:[v.a,v.b,v.c,v.d,v.e,v.f]};
+  return null}
+var SKIP={getImageData:1,measureText:1,isPointInPath:1,isPointInStroke:1,getTransform:1,getLineDash:1,getContextAttributes:1,createImageData:1,createLinearGradient:1,createRadialGradient:1,createConicGradient:1,createPattern:1,constructor:1,isContextLost:1,drawFocusIfNeeded:1};
+Object.getOwnPropertyNames(CP).forEach(function(k){var d=Object.getOwnPropertyDescriptor(CP,k);if(!d)return;
+  if(typeof d.value==="function"&&!SKIP[k]){var f=d.value;CP[k]=function(){if(R.on){var id=need(this.canvas),a=[id,k];for(var i=0;i<arguments.length;i++)a.push(enc(arguments[i]));R.buf.push(a)}return f.apply(this,arguments)}}
+  else if(d.set&&k!=="canvas"){var s=d.set;Object.defineProperty(CP,k,{get:d.get,set:function(v){if(R.on){var id=need(this.canvas);R.buf.push([id,"="+k,enc(v)])}s.call(this,v)},configurable:true,enumerable:d.enumerable})}});
+["createLinearGradient","createRadialGradient","createConicGradient"].forEach(function(k){var f=CP[k];if(!f)return;CP[k]=function(){var g=f.apply(this,arguments);try{g.__gd={id:++R.g,k:k,a:[].slice.call(arguments),s:[]}}catch(e){}return g}});
+if(GP){var as=GP.addColorStop;GP.addColorStop=function(o,c){try{if(this.__gd)this.__gd.s.push([o,c])}catch(e){}return as.apply(this,arguments)}}
+["width","height"].forEach(function(k){var d=Object.getOwnPropertyDescriptor(HP,k);if(!d||!d.set)return;Object.defineProperty(HP,k,{get:d.get,set:function(v){d.set.call(this,v);if(R.on&&this.__rid&&R.sent[this.__rid])R.buf.push([this.__rid,"#"+k,+v])},configurable:true,enumerable:d.enumerable})});
+R.start=function(){R.sent={};R.gsent={};R.buf=[];R.on=true};
+R.stop=function(){R.on=false;R.buf=[]};
+R.take=function(){var b=R.buf;R.buf=[];return b};
+/* partner side: replay */
+var P=window.__play={cv:{},ctx:{},gr:{},q:[],busy:false};
+/* every canvas is replayed on a hidden copy; the copies of the ones on screen are shown each frame */
+function el(id){var c=P.cv[id];if(!c){c=P.cv[id]=document.createElement("canvas")}return c}
+P.show=function(){[].forEach.call(document.querySelectorAll('#comir canvas[data-rid]'),function(d){var c=P.cv[d.getAttribute("data-rid")];if(!c||!c.width)return;if(d.width!==c.width)d.width=c.width;if(d.height!==c.height)d.height=c.height;var g=d.__sc||(d.__sc=d.getContext("2d"));g.save();g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;g.globalCompositeOperation="copy";g.imageSmoothingEnabled=false;g.drawImage(c,0,0);g.restore()})};
+function cx(id){var e=el(id),c=e.__pc;if(!c||c.canvas!==e){c=e.__pc=e.getContext("2d")}return c}
+var scratch=document.createElement("canvas").getContext("2d");
+function dec(v){if(v==null||typeof v!=="object")return v;if(Array.isArray(v))return v.map(dec);if(v.c!=null)return el(v.c);if(v.g!=null)return P.gr[v.g]||"#000";if(v.m)return new DOMMatrix(v.m);return v}
+function apply(o){var id=o[0],k=o[1];
+  if(k==="#G"){var g=scratch[o[3]].apply(scratch,o[4]);o[5].forEach(function(s){try{g.addColorStop(s[0],s[1])}catch(e){}});P.gr[o[2]]=g;return}
+  if(k==="#width"||k==="#height"){var e=el(id),p=k.slice(1);if(e[p]!==o[2])e[p]=o[2];return}
+  var c=cx(id);
+  if(k.charAt(0)==="="){try{c[k.slice(1)]=dec(o[2])}catch(e){}return}
+  var a=[];for(var i=2;i<o.length;i++)a.push(dec(o[i]));try{c[k].apply(c,a)}catch(e){}}
+P.push=function(ops){P.q.push(ops);if(!P.busy)run()};
+function run(){P.busy=true;while(P.q.length){var ops=P.q[0];while(ops.length){var o=ops[0];
+      if(o[1]==="#S"){var e=el(o[0]);if(e.width!==o[2])e.width=o[2];if(e.height!==o[3])e.height=o[3];ops.shift();
+        if(o[4]){var im=new Image();im.onload=im.onerror=function(){try{var g=cx(o[0]);g.save();g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;g.globalCompositeOperation="copy";g.drawImage(im,0,0);g.restore()}catch(x){}run()};im.src=o[4];return}continue}
+      ops.shift();apply(o)}
+    P.q.shift()}P.busy=false}
+})();
+</script>
 <script>
 (function(){var l="auto";try{l=localStorage.getItem("dv_lay")||"auto"}catch(e){}
 if(l!=="phone"&&l!=="desktop"){l=(window.matchMedia&&matchMedia("(pointer:fine)").matches&&innerWidth>=900)?"desktop":"phone"}
@@ -3591,7 +3643,10 @@ var COOP_CH=(location.pathname.match(/chapter(\d)/)||[])[1]|0||__COOP_CH;
 var COOP_ALPHA="ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 function coopCode(){var s="";for(var i=0;i<4;i++)s+=COOP_ALPHA[Math.floor(Math.random()*COOP_ALPHA.length)];return s}
 function coopPid(code){return "danoyavalley-"+String(code).toLowerCase()}
-function coopSend(m){try{if(COOP.conn&&COOP.conn.open)COOP.conn.send(m)}catch(e){}}
+/* big messages (first pictures, long menus) go in 15 KB pieces so every phone's connection accepts them */
+function coopSend(m){try{if(!COOP.conn||!COOP.conn.open)return;var j=JSON.stringify(m);if(j.length<=15000){COOP.conn.send(m);return}
+  var id=(COOP.ck=(COOP.ck||0)+1),n=Math.ceil(j.length/15000);for(var i=0;i<n;i++)COOP.conn.send({t:"ck",id:id,i:i,n:n,d:j.substr(i*15000,15000)})}catch(e){}}
+function coopUnchunk(m,fn){var b=COOP.ckb||(COOP.ckb={}),e=b[m.id]||(b[m.id]={n:m.n,p:[],c:0});if(e.p[m.i]==null){e.p[m.i]=m.d;e.c++}if(e.c===e.n){delete b[m.id];try{fn(JSON.parse(e.p.join("")))}catch(x){}}}
 function coopLoadPeer(cb){if(window.Peer)return cb();var urls=["https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js","https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"],i=0;
   (function nx(){if(window.Peer)return cb();if(i>=urls.length)return cb(new Error("load"));var s=document.createElement("script");s.src=urls[i++];s.onload=function(){cb(window.Peer?null:new Error("load"))};s.onerror=function(){s.remove();nx()};document.head.appendChild(s)})()}
 function coopJoinHash(){var m=location.hash.match(/coopjoin=([A-Za-z0-9]{4})/);return m?m[1].toUpperCase():null}
@@ -3614,7 +3669,7 @@ if(window.__coopGuestMode){try{var _SP=Storage.prototype;_SP.setItem=function(){
 "#coopp button.g{background:#eee2cf}#coopp .code{font:400 2.2rem Bungee,Impact,sans-serif;letter-spacing:.2em;background:#2a1a10;color:#ffd34d;border-radius:12px;padding:8px 0}"+
 "#coopp .pk{display:grid;grid-template-columns:1fr 1fr;gap:8px}#coopp .pk button{background:#fff;border:2px solid #c79a62;box-shadow:none;padding:10px 6px}"+
 "#coopp input{font:400 1.8rem Bungee,Impact,sans-serif;text-align:center;letter-spacing:.2em;text-transform:uppercase;border:3px solid #c79a62;border-radius:12px;padding:6px;width:100%;box-sizing:border-box;background:#fff;color:#2a1a10}"+
-"#comir{position:absolute;inset:0}#comir canvas{opacity:0}#covid{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;background:#000;display:block;opacity:.01}#covc{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;pointer-events:none}"+
+"#comir{position:absolute;inset:0}"+
 "body.coopg #qscard,body.coopg #exitch{display:none!important}"+
 "#cotag{position:absolute;left:50%;transform:translateX(-50%);bottom:8px;z-index:60;background:#000c;color:#fff;font:800 .78rem Figtree,system-ui,sans-serif;border-radius:999px;padding:5px 12px;pointer-events:none;white-space:nowrap}"+
 "#cotag.me{background:#ffd34d;color:#2a1a10;bottom:auto;top:8px}"+
@@ -3656,8 +3711,8 @@ function coopHost(){var ad=window.__coopAd||{};COOP.hostLabel=ad.hostLabel?ad.ho
         COOP.conn=c;c.on("data",coopHostData);c.on("close",function(){if(COOP.conn===c)coopLost()});c.on("error",function(){});
         var hi=function(){var ad=window.__coopAd||{};c.send({t:"hello",ch:COOP_CH,host:COOP.hostLabel,opts:ad.guestOpts?ad.guestOpts():[]})};if(c.open)hi();else c.on("open",hi)});
       p.on("disconnected",function(){if(COOP.on)try{p.reconnect()}catch(x){}})})()})}
-function coopHostData(m){if(!m||!m.t)return;COOP.lastMsg=Date.now();if(m.t==="bye"){coopLost();return}
-  if(m.t==="ready")coopHostStart(m.pick);
+function coopHostData(m){if(!m||!m.t)return;if(m.t==="ck"){coopUnchunk(m,coopHostData);return}COOP.lastMsg=Date.now();if(m.t==="bye"){coopLost();return}
+  if(m.t==="ready"){COOP.gz=!!m.z;coopHostStart(m.pick)}
   else if(m.t==="in"){window.__coopIn={x:+m.x||0,y:+m.y||0};COOP.lastIn=Date.now()}
   else if(m.t==="btn")coopHostBtn(m.b);
   else if(m.t==="tap")coopHostTap(m)}
@@ -3665,19 +3720,23 @@ function coopHostStart(pick){if(COOP.on)return;var ad=window.__coopAd||{};try{if
   COOP.on=true;COOP.lastMsg=Date.now();window.__coopOn=true;COOP.owner="host";coopBtnSync();coopClose();
   try{if(ad.start)ad.start()}catch(e){}
   coopHint("👥 Your partner joined as "+COOP.guestLabel+". You play "+COOP.hostLabel+".",4000);
-  coopMixStart();try{COOP.call=COOP.peer.call(COOP.conn.peer,COOP.stream,{sdpTransform:coopH264});coopTune(COOP.call)}catch(e){}
+  try{window.__rec.start()}catch(e){}(function lp(){if(!COOP.on)return;try{var o=window.__rec.take();if(o.length)coopSendOps(o)}catch(e){}COOP.raf=requestAnimationFrame(lp)})();
   coopSend({t:"go",guest:COOP.guestLabel,host:COOP.hostLabel});
   COOP.lastHtml="";COOP.lastHud="";COOP.mt=setInterval(coopMirror,80);coopAudioResync()}
 /* put H.264 first in the video offer: iPhones decode it in hardware, which keeps the partner's picture smooth */
 function coopH264(sdp){try{var L=sdp.split("\r\n"),mi=-1,i;for(i=0;i<L.length;i++)if(L[i].indexOf("m=video")===0){mi=i;break}if(mi<0)return sdp;var h=[];
   for(i=mi+1;i<L.length&&L[i].indexOf("m=")!==0;i++){var r=L[i].match(/^a=rtpmap:(\d+) H264\/90000/);if(r)h.push(r[1])}if(!h.length)return sdp;
   var p=L[mi].split(" "),pt=p.slice(3);L[mi]=p.slice(0,3).concat(h,pt.filter(function(x){return h.indexOf(x)<0})).join(" ");return L.join("\r\n")}catch(e){return sdp}}
+/* drawing commands are squeezed (deflate) before sending: about 8 times less data */
+function coopB64(u){var s="";for(var i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s)}
+function coopSendOps(o){var j=JSON.stringify(o);if(!COOP.gz||!window.CompressionStream){coopSend({t:"ops",o:o});return}
+  COOP.zq=(COOP.zq||Promise.resolve()).then(function(){return new Response(new Blob([j]).stream().pipeThrough(new CompressionStream("deflate-raw"))).arrayBuffer()}).then(function(b){coopSend({t:"opz",z:coopB64(new Uint8Array(b))})}).catch(function(){coopSend({t:"ops",o:o})})}
 function coopTune(call){try{var pc=call.peerConnection;if(!pc){setTimeout(function(){coopTune(call)},300);return}pc.getSenders().forEach(function(s){if(s.track&&s.track.kind==="video"){try{s.track.contentHint="motion"}catch(e){}var p=s.getParameters();if(!p.encodings||!p.encodings.length)p.encodings=[{}];p.encodings[0].maxBitrate=1000000;p.encodings[0].maxFramerate=30;p.degradationPreference="maintain-framerate";s.setParameters(p).catch(function(){})}})}catch(e){}}
 function coopLost(){if(!COOP.on){COOP.conn=null;return}coopEnd(false);coopHint("👥 Your partner left. You're playing solo now.",4000)}
 function coopEnd(tell){if(tell)coopSend({t:"bye"});var was=COOP.on;COOP.on=false;window.__coopOn=false;window.__coopIn={x:0,y:0};COOP.owner="host";clearInterval(COOP.mt);
   try{var ad=window.__coopAd;if(was&&ad&&ad.end)ad.end()}catch(e){}
   try{if(COOP.call)COOP.call.close()}catch(e){}try{if(COOP.conn)COOP.conn.close()}catch(e){}try{if(COOP.peer)COOP.peer.destroy()}catch(e){}
-  COOP.call=COOP.conn=COOP.peer=null;COOP.role=null;COOP.code="";cancelAnimationFrame(COOP.raf);COOP.raf=0;COOP.mix=null;coopBtnSync()}
+  try{window.__rec.stop()}catch(e){}COOP.call=COOP.conn=COOP.peer=null;COOP.role=null;COOP.code="";cancelAnimationFrame(COOP.raf);COOP.raf=0;coopBtnSync()}
 /* the picture: every canvas in the stage, drawn at 2x so pixels stay crisp */
 function coopMixStart(){if(COOP.mix)return;var m=document.createElement("canvas");m.width=320;m.height=384;COOP.mix=m;COOP.mg=m.getContext("2d");COOP.stream=m.captureStream?m.captureStream(30):null;
   (function lp(){coopMixDraw();COOP.raf=requestAnimationFrame(lp)})()}
@@ -3730,12 +3789,8 @@ function coopGuestInit(){var code=coopJoinHash();COOP.role="guest";COOP.code=cod
   (function(){var P=HTMLMediaElement.prototype,_pl=P.play;P.play=function(){if(this instanceof HTMLVideoElement||this.__pool)return _pl.apply(this,arguments);try{this.pause()}catch(e){}return Promise.resolve()}})();
   try{if(!S)S=fresh()}catch(e){try{S=fresh()}catch(x){}}try{S.music=true;S.sfx=true}catch(e){}
   var st=$("stage");[].slice.call(st.children).forEach(function(c){c.remove()});
-  var v=document.createElement("video");v.id="covid";v.autoplay=true;v.muted=true;v.playsInline=true;v.setAttribute("playsinline","");st.appendChild(v);
-  /* draw each video frame onto a pixel canvas so the art stays sharp on phones (Safari blurs scaled video) */
-  var vc=document.createElement("canvas");vc.id="covc";vc.width=320;vc.height=384;st.appendChild(vc);var vg=vc.getContext("2d");
-  function vdraw(){try{if(v.videoWidth){if(vc.width!==v.videoWidth){vc.width=v.videoWidth;vc.height=v.videoHeight}vg.imageSmoothingEnabled=false;vg.drawImage(v,0,0,vc.width,vc.height)}}catch(e){}}
-  if(v.requestVideoFrameCallback){(function f(){vdraw();v.requestVideoFrameCallback(f)})()}else{(function f(){vdraw();requestAnimationFrame(f)})()}
   var mir=document.createElement("div");mir.id="comir";st.appendChild(mir);
+  (function f(){try{window.__play.show()}catch(e){}requestAnimationFrame(f)})();
   var tag=document.createElement("div");tag.id="cotag";tag.textContent="Connecting…";st.appendChild(tag);
   ["pointerdown","pointerup","click"].forEach(function(ev){mir.addEventListener(ev,function(e){var t=e.target,path=[];while(t&&t!==mir){var p=t.parentNode;path.unshift([].indexOf.call(p.childNodes,t));t=p}if(t!==mir)return;
     var r=e.target.getBoundingClientRect();coopSend({t:"tap",ev:ev,p:path,rx:r.width?(e.clientX-r.left)/r.width:.5,ry:r.height?(e.clientY-r.top)/r.height:.5});e.preventDefault();e.stopPropagation()},true)});
@@ -3764,16 +3819,15 @@ function coopGuestConnect(code){coopLoadPeer(function(err){if(err){coopGuestMsg(
   var p;try{p=new Peer({debug:0})}catch(e){coopGuestMsg("Co-op isn't available in this browser.");return}COOP.peer=p;
   var to=setTimeout(function(){if(!COOP.on)coopGuestMsg("No game found for "+code+". Check the code, and that your partner's screen still shows it.")},15000);
   p.on("error",function(e){if(e&&e.type==="peer-unavailable"){clearTimeout(to);coopGuestMsg("No game found for "+code+". Check the code, and that your partner's screen still shows it.")}else if(!COOP.on)coopGuestMsg("Connection problem ("+(e&&e.type||"unknown")+").")});
-  p.on("call",function(call){COOP.call=call;call.answer(undefined,{sdpTransform:coopH264});call.on("stream",function(s){var v=$("covid");v.srcObject=s;var pp=v.play();if(pp&&pp.catch)pp.catch(function(){});coopLowLatency(call)})});
   p.on("open",function(){var c=p.connect(coopPid(code),{serialization:"json",reliable:true});COOP.conn=c;
     c.on("open",function(){coopGuestMsg("Connected. Waiting for the game…")});
     c.on("data",function(m){coopGuestData(m,code)});
     c.on("close",coopGuestLost)})})}
 function coopLowLatency(call){try{var pc=call.peerConnection;pc.getReceivers().forEach(function(r){try{if("jitterBufferTarget" in r)r.jitterBufferTarget=0;if("playoutDelayHint" in r)r.playoutDelayHint=0}catch(e){}})}catch(e){}}
-function coopGuestData(m,code){if(!m||!m.t)return;COOP.lastMsg=Date.now();
+function coopGuestData(m,code){if(!m||!m.t)return;if(m.t==="ck"){coopUnchunk(m,function(x){coopGuestData(x,code)});return}COOP.lastMsg=Date.now();
   if(m.t==="hello"){if(+m.ch!==COOP_CH){location.replace("chapter"+m.ch+".html#coopjoin="+code);return}COOP.hostLabel=m.host;
-    var o=m.opts||[];if(o.length>1){coopPicker("Who do you play?","Your partner plays "+m.host+". Pick your hero. If a fight doesn't have your hero in it, you watch that one.",o,function(id){coopSend({t:"ready",pick:id});coopGuestMsg("Starting…")})}
-    else coopSend({t:"ready",pick:o[0]?o[0][0]:null})}
+    var o=m.opts||[];if(o.length>1){coopPicker("Who do you play?","Your partner plays "+m.host+". Pick your hero. If a fight doesn't have your hero in it, you watch that one.",o,function(id){coopSend({t:"ready",pick:id,z:!!window.DecompressionStream});coopGuestMsg("Starting…")})}
+    else coopSend({t:"ready",pick:o[0]?o[0][0]:null,z:!!window.DecompressionStream})}
   else if(m.t==="go"){COOP.guestLabel=m.guest;COOP.on=true;COOP.busy=false;coopClose();coopBtnSync();var g=$("cotag");if(g){g.textContent="You are "+m.guest;setTimeout(function(){if(g.textContent==="You are "+m.guest)g.style.display="none"},5000)}}
   else if(m.t==="busy"){coopGuestMsg("That game already has a partner.")}
   else if(m.t==="bye"){COOP.busy=true;coopPanel('<h3>Co-op ended</h3><p>Your partner ended the session.</p><button type="button" id="cpx">OK</button>');document.getElementById("cpx").onclick=coopGuestLeave}
@@ -3781,6 +3835,9 @@ function coopGuestData(m,code){if(!m||!m.t)return;COOP.lastMsg=Date.now();
   else if(m.t==="dom0"){var mir=$("comir");if(mir){var t=document.createElement("template");t.innerHTML=m.h;coopMorph(mir,t.content)}var hud=$("hud");if(hud&&m.u!=null){var t2=document.createElement("template");t2.innerHTML=m.u;coopMorph(hud,t2.content)}
     var g=$("cotag");if(g&&COOP.on){if(m.dl){g.style.display="";g.className=m.o==="guest"?"me":"";g.textContent=m.o==="guest"?"💬 Your turn: press A":"💬 "+(COOP.hostLabel||"Your partner").split(" (")[0]+" reads this one"}else if(/💬/.test(g.textContent)){g.style.display="none"}}}
   else if(m.t==="wait"){var g2=$("cotag");if(g2){g2.style.display="";g2.className="";g2.textContent="💬 Your partner presses A for this one"}}
+  else if(m.t==="ops"){COOP.uq=(COOP.uq||Promise.resolve()).then(function(){try{window.__play.push(m.o)}catch(e){}})}
+  else if(m.t==="opz"){COOP.uq=(COOP.uq||Promise.resolve()).then(function(){var s0=atob(m.z),u=new Uint8Array(s0.length);for(var i=0;i<s0.length;i++)u[i]=s0.charCodeAt(i);
+    return new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).text()}).then(function(t){try{window.__play.push(JSON.parse(t))}catch(e){}}).catch(function(){})}
   else if(m.t==="tone"){try{tone.apply(null,m.a)}catch(e){}}
   else if(m.t==="au")coopGuestAu(m);
   else if(m.t==="aul"){/* once a second: the full list of what the host is playing, so nothing can get stuck or go missing */
