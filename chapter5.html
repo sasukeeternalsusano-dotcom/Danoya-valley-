@@ -3603,7 +3603,7 @@ if(window.__coopGuestMode){try{var _SP=Storage.prototype;_SP.setItem=function(){
 
 /* ---------- look ---------- */
 (function(){var st=document.createElement("style");st.textContent=
-"#cobar{position:fixed;left:calc(env(safe-area-inset-left,0px) + 8px);bottom:calc(env(safe-area-inset-bottom,0px) + 8px);z-index:300;display:flex;gap:6px}"+
+"#cobar{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;padding:0 0 calc(env(safe-area-inset-bottom,0px) + 10px)}"+
 "#coopbtn,#dvscbtn{font:800 .8rem Figtree,system-ui,sans-serif;background:var(--panel,#2a1a10);color:var(--ink,#fff6ee);border:2px solid var(--line,#ffd34d);border-radius:999px;padding:7px 12px;cursor:pointer;box-shadow:0 3px 0 #0005}"+
 "#coopbtn.on{background:#2f9d5a;border-color:#b8ffd0}"+
 "#coopp{position:fixed;inset:0;z-index:2147482000;background:#0009;display:grid;place-items:center;padding:16px}"+
@@ -3789,7 +3789,7 @@ function coopMorph(dst,src){var a=dst.childNodes,b=src.childNodes,i;
   while(a.length>b.length)dst.removeChild(dst.lastChild)}
 
 /* ---------- button ---------- */
-(function(){var bar=document.createElement("div");bar.id="cobar";document.body.appendChild(bar);
+(function(){var bar=document.createElement("div");bar.id="cobar";(document.querySelector(".wrap")||document.body).appendChild(bar);
   if(!window.__coopGuestMode){var sv=document.createElement("button");sv.id="dvscbtn";sv.type="button";sv.textContent="💾 Save code";sv.addEventListener("click",function(e){e.preventDefault();if(window.__dvSaveCode)window.__dvSaveCode()});bar.appendChild(sv)}
   var b=document.createElement("button");b.id="coopbtn";b.type="button";b.textContent="👥 Co-op";b.addEventListener("click",function(e){e.preventDefault();try{ac()}catch(x){}if(COOP.role==="guest"){coopPanel('<h3>Co-op</h3><p>You\'re playing '+(COOP.guestLabel||"with your partner")+'.</p><button type="button" id="cpl">Leave co-op</button><button type="button" class="g" id="cpx">Close</button>');document.getElementById("cpl").onclick=coopGuestLeave;document.getElementById("cpx").onclick=coopClose;return}coopMenu()});bar.insertBefore(b,bar.firstChild)})();
 
