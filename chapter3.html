@@ -3114,7 +3114,7 @@ window.__dunA=function(){if(!D.on||talking||ui||D.dead)return;action()};
 window.__dunSwap=function(){if(!D.on||talking||ui)return;D.act=1-D.act;sfx("swap");say_("Now playing: "+(D.act===0?"Doodi (sword)":"Danoya (lantern)"))};
 /* co-op, Chapter 3: the host picks Doodi (sword) or Danoya (lantern); the partner plays the other.
    Both can be hurt; you share the hearts. */
-(function(){var _sw=window.__dunSwap,HI=0,NM=["Doodi (sword)","Danoya (lantern)"];
+(function(){var _sw=window.__dunSwap,HI=0,NM=["Doodi","Danoya"];
   var _st=window.__d3start;window.__d3start=async function(){var r=_st.apply(this,arguments);if(window.__coopOn)D.act=HI;return r};
   window.__dunSwap=function(){if(window.__coopOn){say_("In co-op you each play your own hero.");return}return _sw.apply(this,arguments)};
   window.__coopAd={picks:function(){return [["doodi",NM[0]],["danoya",NM[1]]]},setHost:function(id){HI=id==="danoya"?1:0},setGuest:function(){},
@@ -3698,7 +3698,7 @@ if(window.__coopGuestMode){try{var _SP=Storage.prototype;_SP.setItem=function(){
 "#coopp button.g{background:#eee2cf}#coopp .code{font:400 2.2rem Bungee,Impact,sans-serif;letter-spacing:.2em;background:#2a1a10;color:#ffd34d;border-radius:12px;padding:8px 0}"+
 "#coopp .pk{display:grid;grid-template-columns:1fr 1fr;gap:8px}#coopp .pk button{background:#fff;border:2px solid #c79a62;box-shadow:none;padding:10px 6px}"+
 "#coopp input{font:400 1.8rem Bungee,Impact,sans-serif;text-align:center;letter-spacing:.2em;text-transform:uppercase;border:3px solid #c79a62;border-radius:12px;padding:6px;width:100%;box-sizing:border-box;background:#fff;color:#2a1a10}"+
-"#comir{position:absolute;inset:0}#comir canvas{opacity:0}#covid{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;image-rendering:pixelated;background:#000;display:block}"+
+"#comir{position:absolute;inset:0}#comir canvas{opacity:0}#covid{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;background:#000;display:block;opacity:.01}#covc{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;pointer-events:none}"+
 "body.coopg #qscard,body.coopg #exitch{display:none!important}"+
 "#cotag{position:absolute;left:50%;transform:translateX(-50%);bottom:8px;z-index:60;background:#000c;color:#fff;font:800 .78rem Figtree,system-ui,sans-serif;border-radius:999px;padding:5px 12px;pointer-events:none;white-space:nowrap}"+
 "#cotag.me{background:#ffd34d;color:#2a1a10;bottom:auto;top:8px}"+
@@ -3749,20 +3749,24 @@ function coopHostStart(pick){if(COOP.on)return;var ad=window.__coopAd||{};try{if
   COOP.on=true;COOP.lastMsg=Date.now();window.__coopOn=true;COOP.owner="host";coopBtnSync();coopClose();
   try{if(ad.start)ad.start()}catch(e){}
   coopHint("👥 Your partner joined as "+COOP.guestLabel+". You play "+COOP.hostLabel+".",4000);
-  coopMixStart();try{COOP.call=COOP.peer.call(COOP.conn.peer,COOP.stream);coopTune(COOP.call)}catch(e){}
+  coopMixStart();try{COOP.call=COOP.peer.call(COOP.conn.peer,COOP.stream,{sdpTransform:coopH264});coopTune(COOP.call)}catch(e){}
   coopSend({t:"go",guest:COOP.guestLabel,host:COOP.hostLabel});
-  COOP.lastHtml="";COOP.lastHud="";COOP.mt=setInterval(coopMirror,50);coopAudioResync()}
-function coopTune(call){try{var pc=call.peerConnection;if(!pc){setTimeout(function(){coopTune(call)},300);return}pc.getSenders().forEach(function(s){if(s.track&&s.track.kind==="video"){try{s.track.contentHint="motion"}catch(e){}var p=s.getParameters();if(!p.encodings||!p.encodings.length)p.encodings=[{}];p.encodings[0].maxBitrate=2500000;p.encodings[0].maxFramerate=30;p.degradationPreference="maintain-framerate";s.setParameters(p).catch(function(){})}})}catch(e){}}
+  COOP.lastHtml="";COOP.lastHud="";COOP.mt=setInterval(coopMirror,80);coopAudioResync()}
+/* put H.264 first in the video offer: iPhones decode it in hardware, which keeps the partner's picture smooth */
+function coopH264(sdp){try{var L=sdp.split("\r\n"),mi=-1,i;for(i=0;i<L.length;i++)if(L[i].indexOf("m=video")===0){mi=i;break}if(mi<0)return sdp;var h=[];
+  for(i=mi+1;i<L.length&&L[i].indexOf("m=")!==0;i++){var r=L[i].match(/^a=rtpmap:(\d+) H264\/90000/);if(r)h.push(r[1])}if(!h.length)return sdp;
+  var p=L[mi].split(" "),pt=p.slice(3);L[mi]=p.slice(0,3).concat(h,pt.filter(function(x){return h.indexOf(x)<0})).join(" ");return L.join("\r\n")}catch(e){return sdp}}
+function coopTune(call){try{var pc=call.peerConnection;if(!pc){setTimeout(function(){coopTune(call)},300);return}pc.getSenders().forEach(function(s){if(s.track&&s.track.kind==="video"){try{s.track.contentHint="motion"}catch(e){}var p=s.getParameters();if(!p.encodings||!p.encodings.length)p.encodings=[{}];p.encodings[0].maxBitrate=1000000;p.encodings[0].maxFramerate=30;p.degradationPreference="maintain-framerate";s.setParameters(p).catch(function(){})}})}catch(e){}}
 function coopLost(){if(!COOP.on){COOP.conn=null;return}coopEnd(false);coopHint("👥 Your partner left. You're playing solo now.",4000)}
 function coopEnd(tell){if(tell)coopSend({t:"bye"});var was=COOP.on;COOP.on=false;window.__coopOn=false;window.__coopIn={x:0,y:0};COOP.owner="host";clearInterval(COOP.mt);
   try{var ad=window.__coopAd;if(was&&ad&&ad.end)ad.end()}catch(e){}
   try{if(COOP.call)COOP.call.close()}catch(e){}try{if(COOP.conn)COOP.conn.close()}catch(e){}try{if(COOP.peer)COOP.peer.destroy()}catch(e){}
   COOP.call=COOP.conn=COOP.peer=null;COOP.role=null;COOP.code="";cancelAnimationFrame(COOP.raf);COOP.raf=0;COOP.mix=null;coopBtnSync()}
 /* the picture: every canvas in the stage, drawn at 2x so pixels stay crisp */
-function coopMixStart(){if(COOP.mix)return;var m=document.createElement("canvas");m.width=640;m.height=768;COOP.mix=m;COOP.mg=m.getContext("2d");COOP.stream=m.captureStream?m.captureStream(30):null;
+function coopMixStart(){if(COOP.mix)return;var m=document.createElement("canvas");m.width=320;m.height=384;COOP.mix=m;COOP.mg=m.getContext("2d");COOP.stream=m.captureStream?m.captureStream(30):null;
   (function lp(){coopMixDraw();COOP.raf=requestAnimationFrame(lp)})()}
-function coopMixDraw(){var g=COOP.mg,st=$("stage");if(!g||!st)return;g.imageSmoothingEnabled=false;var sr=st.getBoundingClientRect(),ox=sr.left+st.clientLeft,oy=sr.top+st.clientTop,sw=st.clientWidth||1,sh=st.clientHeight||1,kx=640/sw,ky=768/sh;
-  g.fillStyle="#000";g.fillRect(0,0,640,768);
+function coopMixDraw(){var g=COOP.mg,st=$("stage");if(!g||!st)return;g.imageSmoothingEnabled=false;var sr=st.getBoundingClientRect(),ox=sr.left+st.clientLeft,oy=sr.top+st.clientTop,sw=st.clientWidth||1,sh=st.clientHeight||1,kx=320/sw,ky=384/sh;
+  g.fillStyle="#000";g.fillRect(0,0,320,384);
   [].forEach.call(st.querySelectorAll("canvas"),function(c){if(!c.width||!c.height)return;var r=c.getBoundingClientRect();if(!r.width||!r.height)return;var cs=getComputedStyle(c);if(cs.display==="none"||cs.visibility==="hidden")return;
     try{g.globalAlpha=+cs.opacity||1;g.drawImage(c,(r.left-ox)*kx,(r.top-oy)*ky,r.width*kx,r.height*ky)}catch(e){}});g.globalAlpha=1}
 function coopDlgOpen(){try{return !!dstate&&!dlg.hidden}catch(e){return false}}
@@ -3811,6 +3815,10 @@ function coopGuestInit(){var code=coopJoinHash();COOP.role="guest";COOP.code=cod
   try{if(!S)S=fresh()}catch(e){try{S=fresh()}catch(x){}}try{S.music=true;S.sfx=true}catch(e){}
   var st=$("stage");[].slice.call(st.children).forEach(function(c){c.remove()});
   var v=document.createElement("video");v.id="covid";v.autoplay=true;v.muted=true;v.playsInline=true;v.setAttribute("playsinline","");st.appendChild(v);
+  /* draw each video frame onto a pixel canvas so the art stays sharp on phones (Safari blurs scaled video) */
+  var vc=document.createElement("canvas");vc.id="covc";vc.width=320;vc.height=384;st.appendChild(vc);var vg=vc.getContext("2d");
+  function vdraw(){try{if(v.videoWidth){if(vc.width!==v.videoWidth){vc.width=v.videoWidth;vc.height=v.videoHeight}vg.imageSmoothingEnabled=false;vg.drawImage(v,0,0,vc.width,vc.height)}}catch(e){}}
+  if(v.requestVideoFrameCallback){(function f(){vdraw();v.requestVideoFrameCallback(f)})()}else{(function f(){vdraw();requestAnimationFrame(f)})()}
   var mir=document.createElement("div");mir.id="comir";st.appendChild(mir);
   var tag=document.createElement("div");tag.id="cotag";tag.textContent="Connecting…";st.appendChild(tag);
   ["pointerdown","pointerup","click"].forEach(function(ev){mir.addEventListener(ev,function(e){var t=e.target,path=[];while(t&&t!==mir){var p=t.parentNode;path.unshift([].indexOf.call(p.childNodes,t));t=p}if(t!==mir)return;
@@ -3840,7 +3848,7 @@ function coopGuestConnect(code){coopLoadPeer(function(err){if(err){coopGuestMsg(
   var p;try{p=new Peer({debug:0})}catch(e){coopGuestMsg("Co-op isn't available in this browser.");return}COOP.peer=p;
   var to=setTimeout(function(){if(!COOP.on)coopGuestMsg("No game found for "+code+". Check the code, and that your partner's screen still shows it.")},15000);
   p.on("error",function(e){if(e&&e.type==="peer-unavailable"){clearTimeout(to);coopGuestMsg("No game found for "+code+". Check the code, and that your partner's screen still shows it.")}else if(!COOP.on)coopGuestMsg("Connection problem ("+(e&&e.type||"unknown")+").")});
-  p.on("call",function(call){COOP.call=call;call.answer();call.on("stream",function(s){var v=$("covid");v.srcObject=s;var pp=v.play();if(pp&&pp.catch)pp.catch(function(){});coopLowLatency(call)})});
+  p.on("call",function(call){COOP.call=call;call.answer(undefined,{sdpTransform:coopH264});call.on("stream",function(s){var v=$("covid");v.srcObject=s;var pp=v.play();if(pp&&pp.catch)pp.catch(function(){});coopLowLatency(call)})});
   p.on("open",function(){var c=p.connect(coopPid(code),{serialization:"json",reliable:true});COOP.conn=c;
     c.on("open",function(){coopGuestMsg("Connected. Waiting for the game…")});
     c.on("data",function(m){coopGuestData(m,code)});
@@ -3853,7 +3861,8 @@ function coopGuestData(m,code){if(!m||!m.t)return;COOP.lastMsg=Date.now();
   else if(m.t==="go"){COOP.guestLabel=m.guest;COOP.on=true;COOP.busy=false;coopClose();coopBtnSync();var g=$("cotag");if(g){g.textContent="You are "+m.guest;setTimeout(function(){if(g.textContent==="You are "+m.guest)g.style.display="none"},5000)}}
   else if(m.t==="busy"){coopGuestMsg("That game already has a partner.")}
   else if(m.t==="bye"){COOP.busy=true;coopPanel('<h3>Co-op ended</h3><p>Your partner ended the session.</p><button type="button" id="cpx">OK</button>');document.getElementById("cpx").onclick=coopGuestLeave}
-  else if(m.t==="dom"){var mir=$("comir");if(mir){var t=document.createElement("template");t.innerHTML=m.h;coopMorph(mir,t.content)}var hud=$("hud");if(hud&&m.u!=null){var t2=document.createElement("template");t2.innerHTML=m.u;coopMorph(hud,t2.content)}
+  else if(m.t==="dom"){COOP.pdom=m;if(!COOP.domRaf)COOP.domRaf=requestAnimationFrame(function(){COOP.domRaf=0;var q=COOP.pdom;COOP.pdom=null;if(q)coopApplyDom(q)})}
+  else if(m.t==="dom0"){var mir=$("comir");if(mir){var t=document.createElement("template");t.innerHTML=m.h;coopMorph(mir,t.content)}var hud=$("hud");if(hud&&m.u!=null){var t2=document.createElement("template");t2.innerHTML=m.u;coopMorph(hud,t2.content)}
     var g=$("cotag");if(g&&COOP.on){if(m.dl){g.style.display="";g.className=m.o==="guest"?"me":"";g.textContent=m.o==="guest"?"💬 Your turn: press A":"💬 "+(COOP.hostLabel||"Your partner").split(" (")[0]+" reads this one"}else if(/💬/.test(g.textContent)){g.style.display="none"}}}
   else if(m.t==="wait"){var g2=$("cotag");if(g2){g2.style.display="";g2.className="";g2.textContent="💬 Your partner presses A for this one"}}
   else if(m.t==="tone"){try{tone.apply(null,m.a)}catch(e){}}
@@ -3863,6 +3872,7 @@ function coopGuestData(m,code){if(!m||!m.t)return;COOP.lastMsg=Date.now();
     Object.keys(COOP.gmap||{}).forEach(function(id){if(!want[id]){var a1=COOP.gmap[id];delete COOP.gmap[id];if(a1){a1.__hid=0;try{a1.pause()}catch(e){}}}})}
   else if(m.t==="aup"){var a=COOP.gmap&&COOP.gmap[m.i];if(a){a.__hid=0;delete COOP.gmap[m.i];try{a.pause()}catch(e){}}}
   else if(m.t==="auv"){var a2=COOP.gmap&&COOP.gmap[m.i];if(a2)coopVol(a2,m.v)}}
+function coopApplyDom(m){coopGuestData(Object.assign({},m,{t:"dom0"}))}
 /* audio on the partner's device: a small pool of players unlocked by the join tap (phones need that) */
 function coopPoolUnlock(){COOP.pool=COOP.pool||[];var c=null;try{c=ac()}catch(e){}
   for(var i=COOP.pool.length;i<12;i++){var a=new Audio();a.__pool=1;a.preload="auto";a.src=COOP_SILENT;a.__hid=0;
