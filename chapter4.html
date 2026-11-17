@@ -3297,6 +3297,7 @@ if(window.__coopGuestMode){try{var _SP=Storage.prototype;_SP.setItem=function(){
 /* ---------- look ---------- */
 (function(){var st=document.createElement("style");st.textContent=
 "#cobar{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;padding:0 0 calc(env(safe-area-inset-bottom,0px) + 10px)}"+
+"html[data-lay=\"desktop\"] #cobar{position:fixed;left:calc(env(safe-area-inset-left,0px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 10px);z-index:300;padding:0}"+
 "#coopbtn,#dvscbtn{font:800 .8rem Figtree,system-ui,sans-serif;background:var(--panel,#2a1a10);color:var(--ink,#fff6ee);border:2px solid var(--line,#ffd34d);border-radius:999px;padding:7px 12px;cursor:pointer;box-shadow:0 3px 0 #0005}"+
 "#coopbtn.on{background:#2f9d5a;border-color:#b8ffd0}"+
 "#coopp{position:fixed;inset:0;z-index:2147482000;background:#0009;display:grid;place-items:center;padding:16px}"+
@@ -3381,6 +3382,7 @@ function coopMirror(){if(!COOP.on)return;var st=$("stage"),hud=$("hud"),now=Date
   if(COOP.lastIn&&now-COOP.lastIn>1500){window.__coopIn={x:0,y:0}}
   if(now-(COOP.lastPing||0)>2000){COOP.lastPing=now;coopSend({t:"ping"})}
   coopAudioPoll();
+  if(now-(COOP.lastAul||0)>1000){COOP.lastAul=now;coopSend({t:"aul",l:COOP.aud.filter(function(a){return a.__on&&!a.paused}).map(function(a){return [a.__cid,coopAuKey(a),a.loop?1:0,+a.volume.toFixed(2),+(a.currentTime||0).toFixed(2)]})})}
   if(COOP.lastMsg&&now-COOP.lastMsg>9000){coopLost();return}}
 /* dialogue belongs to whoever started it: story scenes and the host's own talks are the host's to click through,
    anything the partner starts is theirs. The other player's presses on it simply wait. */
@@ -3402,14 +3404,14 @@ function coopHostTap(m){var el=$("stage");if(!el||!m.p)return;for(var i=0;i<m.p.
 /* sound: every song, clip and jingle the host plays is played on the partner's device too, in step */
 function coopAuKey(el){var s=el.currentSrc||el.src||"";if(s.indexOf("blob:")===0&&el.__osrc)return el.__osrc;if(s.indexOf("data:")===0)return "d:"+s.length+":"+s.slice(-48);var i=s.lastIndexOf("/audio/");return i>=0?s.slice(i+1):s}
 (function(){var P=HTMLMediaElement.prototype,_play=P.play,_pause=P.pause,n=0;COOP.aud=[];
-  P.play=function(){if(!(this instanceof HTMLVideoElement)&&COOP.role!=="guest"){if(!this.__cid){this.__cid=++n;COOP.aud.push(this)}var k0=coopAuKey(this);if(k0.indexOf("blob:")!==0)this.__osrc=k0;this.__on=1;this.__sv=+this.volume.toFixed(2);if(COOP.on)coopSend({t:"au",i:this.__cid,s:coopAuKey(this),l:!!this.loop,v:this.__sv,c:+(this.currentTime||0).toFixed(2)})}return _play.apply(this,arguments)};
+  P.play=function(){if(!(this instanceof HTMLVideoElement)&&COOP.role!=="guest"){if(!this.__cid)this.__cid=++n;if(COOP.aud.indexOf(this)<0)COOP.aud.push(this);var k0=coopAuKey(this);if(k0.indexOf("blob:")!==0)this.__osrc=k0;this.__on=1;this.__sv=+this.volume.toFixed(2);if(COOP.on)coopSend({t:"au",i:this.__cid,s:coopAuKey(this),l:!!this.loop,v:this.__sv,c:+(this.currentTime||0).toFixed(2)})}return _play.apply(this,arguments)};
   P.pause=function(){if(this.__cid&&COOP.role!=="guest"){this.__on=0;if(COOP.on)coopSend({t:"aup",i:this.__cid})}return _pause.apply(this,arguments)}})();
 function coopAudioPoll(){COOP.aud=COOP.aud.filter(function(a){if(!a.__on)return !a.paused;if(a.ended||a.paused){a.__on=0;coopSend({t:"aup",i:a.__cid});return false}var v=+a.volume.toFixed(2);if(Math.abs(v-a.__sv)>=.01){a.__sv=v;coopSend({t:"auv",i:a.__cid,v:v})}return true})}
 function coopAudioResync(){COOP.aud.forEach(function(a){if(a.__on&&!a.paused)coopSend({t:"au",i:a.__cid,s:coopAuKey(a),l:!!a.loop,v:+a.volume.toFixed(2),c:+(a.currentTime||0).toFixed(2)})})}
 (function(){var _tn=tone;tone=function(f,t0,d,ty,v){if(COOP.on&&COOP.role==="host")coopSend({t:"tone",a:[f,t0,d,ty,v]});return _tn.apply(this,arguments)}})();
 
 /* ---------- partner (guest) ---------- */
-var COOP_SILENT="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+var COOP_SILENT="data:audio/wav;base64,UklGRvQHAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YdAHAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==";
 function coopGuestInit(){var code=coopJoinHash();COOP.role="guest";COOP.code=code;document.body.classList.add("coopg");
   try{if(!S)S=fresh()}catch(e){try{S=fresh()}catch(x){}}try{S.music=true;S.sfx=true}catch(e){}
   var st=$("stage");[].slice.call(st.children).forEach(function(c){c.remove()});
@@ -3458,18 +3460,25 @@ function coopGuestData(m,code){if(!m||!m.t)return;COOP.lastMsg=Date.now();
   else if(m.t==="wait"){var g2=$("cotag");if(g2){g2.style.display="";g2.className="";g2.textContent="💬 Your partner presses A for this one"}}
   else if(m.t==="tone"){try{tone.apply(null,m.a)}catch(e){}}
   else if(m.t==="au")coopGuestAu(m);
+  else if(m.t==="aul"){/* once a second: the full list of what the host is playing, so nothing can get stuck or go missing */
+    var want={};(m.l||[]).forEach(function(x){want[x[0]]=1;var a0=COOP.gmap&&COOP.gmap[x[0]];if(!a0||a0.paused)coopGuestAu({i:x[0],s:x[1],l:x[2],v:x[3],c:x[4]})});
+    Object.keys(COOP.gmap||{}).forEach(function(id){if(!want[id]){var a1=COOP.gmap[id];delete COOP.gmap[id];if(a1){a1.__hid=0;try{a1.pause()}catch(e){}}}})}
   else if(m.t==="aup"){var a=COOP.gmap&&COOP.gmap[m.i];if(a){a.__hid=0;delete COOP.gmap[m.i];try{a.pause()}catch(e){}}}
-  else if(m.t==="auv"){var a2=COOP.gmap&&COOP.gmap[m.i];if(a2)try{a2.volume=Math.max(0,Math.min(1,m.v))}catch(e){}}}
+  else if(m.t==="auv"){var a2=COOP.gmap&&COOP.gmap[m.i];if(a2)coopVol(a2,m.v)}}
 /* audio on the partner's device: a small pool of players unlocked by the join tap (phones need that) */
-function coopPoolUnlock(){COOP.pool=COOP.pool||[];for(var i=COOP.pool.length;i<12;i++){var a=new Audio();a.src=COOP_SILENT;a.__hid=0;try{var p=a.play();if(p&&p.catch)p.catch(function(){})}catch(e){}COOP.pool.push(a)}}
+function coopPoolUnlock(){COOP.pool=COOP.pool||[];var c=null;try{c=ac()}catch(e){}
+  for(var i=COOP.pool.length;i<12;i++){var a=new Audio();a.preload="auto";a.src=COOP_SILENT;a.__hid=0;
+    try{if(c){var n=c.createMediaElementSource(a),g=c.createGain();n.connect(g);g.connect(c.destination);a.__g=g}}catch(e){}
+    try{var p=a.play();if(p&&p.catch)p.catch(function(){})}catch(e){}COOP.pool.push(a)}}
+function coopVol(a,v){v=Math.max(0,Math.min(1,+v||0));if(a.__g){try{a.__g.gain.setTargetAtTime(v,a.__g.context.currentTime,.03)}catch(e){a.__g.gain.value=v}try{a.volume=1}catch(e){}}else{try{a.volume=v}catch(e){}}}
 function coopSrcOf(k){if(k.indexOf("d:")!==0)return k;var c=[];try{c.push(VICT)}catch(e){}try{c.push(OPN_SRC)}catch(e){}try{for(var t in TRK)c.push(TRK[t])}catch(e){}
   for(var i=0;i<c.length;i++){var s=c[i];if(typeof s==="string"&&s.indexOf("data:")===0&&"d:"+s.length+":"+s.slice(-48)===k)return s}return null}
 function coopGuestAu(m){COOP.gmap=COOP.gmap||{};var src=coopSrcOf(m.s);if(!src)return;var a=COOP.gmap[m.i];
-  if(!a){COOP.pool=COOP.pool||[];for(var i=0;i<COOP.pool.length;i++){var q=COOP.pool[i];if(!q.__hid||q.paused&&!COOP.gmap[q.__hid]){a=q;break}}
+  if(!a){COOP.pool=COOP.pool||[];for(var i=0;i<COOP.pool.length;i++){var q=COOP.pool[i];if(!q.__hid||!COOP.gmap[q.__hid]){a=q;break}}
     if(!a){for(var j=0;j<COOP.pool.length;j++){var q2=COOP.pool[j];if(q2.paused||q2.ended){a=q2;break}}}
     if(!a){a=new Audio();COOP.pool.push(a)}
     if(a.__hid&&COOP.gmap[a.__hid]===a)delete COOP.gmap[a.__hid];a.__hid=m.i;COOP.gmap[m.i]=a}
-  try{if(a.__src!==src){a.src=src;a.__src=src}a.loop=!!m.l;a.volume=Math.max(0,Math.min(1,m.v));if(m.c>.5&&Math.abs((a.currentTime||0)-m.c)>.4)a.currentTime=m.c;var p=a.play();if(p&&p.catch)p.catch(function(){})}catch(e){}}
+  try{try{var c0=ac();if(c0&&c0.state!=="running")c0.resume()}catch(x){}if(a.__src!==src){a.src=src;a.__src=src}a.loop=!!m.l;coopVol(a,m.v);if(m.c>.5&&Math.abs((a.currentTime||0)-m.c)>.4)a.currentTime=m.c;var p=a.play();if(p&&p.catch)p.catch(function(){})}catch(e){}}
 /* keep the partner's copy in step with the host's page without rebuilding it (so animations don't restart) */
 function coopMorph(dst,src){var a=dst.childNodes,b=src.childNodes,i;
   for(i=0;i<b.length;i++){var s=b[i],d=a[i];
