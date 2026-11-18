@@ -130,9 +130,11 @@ var ST=["fillStyle","strokeStyle","globalAlpha","lineWidth","lineCap","lineJoin"
 function need(c){var id=rid(c);if(R.sent[id])return id;R.sent[id]=1;var u="";try{u=c.width&&c.height?c.toDataURL():""}catch(e){}R.buf.push([id,"#S",c.width,c.height,u]);
   try{var x=c.getContext("2d");ST.forEach(function(p){if(p in x){var v=x[p];R.buf.push([id,"="+p,enc(v)])}});var m=x.getTransform();R.buf.push([id,"setTransform",m.a,m.b,m.c,m.d,m.e,m.f]);if(x.getLineDash)R.buf.push([id,"setLineDash",x.getLineDash()])}catch(e){}
   return id}
-function enc(v){if(v==null||typeof v!=="object")return v;
+function enc(v){if(typeof v==="number"){return v%1?Math.round(v*1000)/1000:v}if(v==null||typeof v!=="object")return v;
   if(v instanceof HTMLCanvasElement)return {c:need(v)};
-  if(GP&&v instanceof CanvasGradient&&v.__gd){var d=v.__gd;if(R.gsent[d.id]!==d.s.length){R.gsent[d.id]=d.s.length;R.buf.push([0,"#G",d.id,d.k,d.a,d.s])}return {g:d.id}}
+  if(GP&&v instanceof CanvasGradient&&v.__gd){var d=v.__gd,a2=d.a.map(enc),key=d.k+JSON.stringify(a2)+JSON.stringify(d.s),kid=R.gkey[key];
+    /* the game makes the same gradients again every frame: send each different one only once */
+    if(kid==null){if(++R.gk>4000){R.gkey={};R.gk=0}R.gkey[key]=kid=d.id;R.buf.push([0,"#G",d.id,d.k,a2,d.s])}return {g:kid}}
   if(Array.isArray(v))return v.map(enc);
   if(window.DOMMatrix&&v instanceof DOMMatrix)return {m:[v.a,v.b,v.c,v.d,v.e,v.f]};
   return null}
@@ -143,11 +145,21 @@ Object.getOwnPropertyNames(CP).forEach(function(k){var d=Object.getOwnPropertyDe
 ["createLinearGradient","createRadialGradient","createConicGradient"].forEach(function(k){var f=CP[k];if(!f)return;CP[k]=function(){var g=f.apply(this,arguments);try{g.__gd={id:++R.g,k:k,a:[].slice.call(arguments),s:[]}}catch(e){}return g}});
 if(GP){var as=GP.addColorStop;GP.addColorStop=function(o,c){try{if(this.__gd)this.__gd.s.push([o,c])}catch(e){}return as.apply(this,arguments)}}
 ["width","height"].forEach(function(k){var d=Object.getOwnPropertyDescriptor(HP,k);if(!d||!d.set)return;Object.defineProperty(HP,k,{get:d.get,set:function(v){d.set.call(this,v);if(R.on&&this.__rid&&R.sent[this.__rid])R.buf.push([this.__rid,"#"+k,+v])},configurable:true,enumerable:d.enumerable})});
-R.start=function(){R.sent={};R.gsent={};R.buf=[];R.on=true};
+R.start=function(){R.sent={};R.gsent={};R.gkey={};R.gk=0;R.prev=[];R.pidx=null;R.buf=[];R.on=true};
+/* most of each frame is drawn exactly like the frame before: only send the parts that changed.
+   [start,len] means "the same as ops start..start+len of the last batch"; anything else is a new op */
+R.pack=function(ops){var prev=R.prev||[],idx=R.pidx;if(!idx){idx=new Map();for(var j=0;j<prev.length;j++){var l=idx.get(prev[j]);if(l)l.push(j);else idx.set(prev[j],[j])}}
+  var cur=new Array(ops.length),out=[],run=null,exp=-1,nidx=new Map();
+  for(var i=0;i<ops.length;i++){var k=JSON.stringify(ops[i]);cur[i]=k;var nl=nidx.get(k);if(nl)nl.push(i);else nidx.set(k,[i]);
+    if(run&&exp<prev.length&&prev[exp]===k){run[1]++;exp++;continue}
+    var ps=idx.get(k),pos=-1;if(ps){for(var q=0;q<ps.length;q++)if(ps[q]>=exp){pos=ps[q];break}if(pos<0)pos=ps[0]}
+    if(pos>=0){run=[pos,1];out.push(run);exp=pos+1}else{run=null;out.push(ops[i])}}
+  R.prev=cur;R.pidx=nidx;return out};
 R.stop=function(){R.on=false;R.buf=[]};
 R.take=function(){var b=R.buf;R.buf=[];return b};
 /* partner side: replay */
-var P=window.__play={cv:{},ctx:{},gr:{},q:[],busy:false};
+var P=window.__play={cv:{},ctx:{},gr:{},q:[],busy:false,prev:[]};
+P.unpack=function(out){var prev=P.prev,cur=[];for(var i=0;i<out.length;i++){var e=out[i];if(typeof e[1]==="number"){for(var j=0;j<e[1];j++)cur.push(prev[e[0]+j])}else cur.push(e)}P.prev=cur;return cur.slice()};
 /* every canvas is replayed on a hidden copy; the copies of the ones on screen are shown each frame */
 function el(id){var c=P.cv[id];if(!c){c=P.cv[id]=document.createElement("canvas")}return c}
 P.show=function(){[].forEach.call(document.querySelectorAll('#comir canvas[data-rid]'),function(d){var c=P.cv[d.getAttribute("data-rid")];if(!c||!c.width)return;if(d.width!==c.width)d.width=c.width;if(d.height!==c.height)d.height=c.height;var g=d.__sc||(d.__sc=d.getContext("2d"));g.save();g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;g.globalCompositeOperation="copy";g.imageSmoothingEnabled=false;g.drawImage(c,0,0);g.restore()})};
@@ -3263,7 +3275,7 @@ function sidePanels(n,rows){
   var ok=document.documentElement.getAttribute("data-lay")==="desktop"&&pw>=150;
   L.classList.toggle("on",ok);R.classList.toggle("on",ok);if(!ok)return;
   L.style.width=R.style.width=pw+"px";L.style.left=Math.max(8,r.left-pw-12)+"px";R.style.left=(r.right+12)+"px";
-  var g="";try{if(typeof goalText==="function"&&typeof S!=="undefined"&&S&&S.intro!==undefined)g=goalText()}catch(e){}if(!g)g=txt("goal");var gg=document.getElementById("dpg");if(gg)gg.textContent=(g||"Explore, talk to people, and see what happens.").replace(/^Goal:\s*/i,"");
+  var g="";try{if(/chapter[12]\.html/.test(location.pathname)&&typeof goalText==="function"&&typeof S!=="undefined"&&S&&S.intro!==undefined)g=goalText()}catch(e){}if(!g)g=txt("goal");var gg=document.getElementById("dpg");if(gg)gg.textContent=(g||"Explore, talk to people, and see what happens.").replace(/^Goal:\s*/i,"");
   var t=document.getElementById("dpt");if(t){var hd=document.getElementById("hud"),parts=[];if(hd)Array.prototype.forEach.call(hd.children,function(c){var x=(c.innerText||c.textContent||"").replace(/\s+/g," ").trim();if(x&&!/^🎵|^🔇|^🔈/.test(x))parts.push(x)});t.textContent=parts.join("  ·  ")}}
  pos();window.addEventListener("resize",pos);setInterval(pos,700)}
 try{
@@ -3388,7 +3400,7 @@ function coopMenu(){
   if(COOP.role==="host"&&COOP.on){coopPanel('<h3>Co-op</h3><p>'+COOP.guestLabel+' is playing with you.</p><button type="button" id="cpe">End co-op</button><button type="button" class="g" id="cpx">Close</button>');
     document.getElementById("cpe").onclick=function(){coopEnd(true);coopClose()};document.getElementById("cpx").onclick=coopClose;return}
   if(COOP.role==="host"){coopHostPanel();return}
-  coopPanel('<h3>Play together</h3><p>One of you hosts and shares a code. The other joins from their own phone or laptop, from Chapter 3, 4 or 5. The host\'s save is the one that counts.</p>'+
+  coopPanel('<h3>Play together</h3><p>One of you hosts and shares a code. The other joins from their own phone or laptop, from Chapter 3, 4, 5 or EX. The host\'s save is the one that counts.</p>'+
     '<button type="button" id="cph">Host a game</button><button type="button" class="g" id="cpj">Join with a code</button><button type="button" class="g" id="cpx">Not now</button>');
   document.getElementById("cph").onclick=coopHostPick;document.getElementById("cpj").onclick=coopJoinPanel;document.getElementById("cpx").onclick=coopClose}
 function coopJoinPanel(){coopPanel('<h3>Join a game</h3><p>Type the 4-letter code from your partner\'s screen.</p><input id="cpi" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false"><button type="button" id="cpg">Join</button><button type="button" class="g" id="cpx">Back</button><p id="cpm" style="color:#c2412e"></p>');
@@ -3399,8 +3411,8 @@ function coopJoinPanel(){coopPanel('<h3>Join a game</h3><p>Type the 4-letter cod
 
 /* ---------- host ---------- */
 function coopHostPick(){var ad=window.__coopAd||{},opts=ad.picks?ad.picks():[];if(!opts.length){coopHost();return}
-  coopPicker("Who do you play?",COOP_CH===5?"Pick your hero. Your partner picks one of the others. In a fight where neither of your heroes is there, you play and your partner watches.":"Your partner plays the other one.",opts,function(id){ad.setHost(id);coopHost()},coopMenu)}
-function coopHostPanel(msg){coopPanel('<h3>Hosting</h3><p>Ask your partner to open Chapter 3, 4 or 5 of Danoya Valley on their own device, tap <b>👥 Co-op</b>, choose <b>Join with a code</b> and type:</p><div class="code">'+(COOP.code||"····")+'</div><p id="cpm">'+(msg||(COOP.away?"Your partner dropped out. They can rejoin with this code while you keep playing.":"Waiting for your partner…"))+'</p><p style="font-size:.8rem;opacity:.75">You play '+COOP.hostLabel+'.'+(COOP_CH===5?' Your partner picks their hero when they join.':' They play '+COOP.guestLabel+'.')+' Keep this screen open while they join.</p><button type="button" class="g" id="cpc">'+(COOP.away?"Stop co-op":"Cancel")+'</button>'+(COOP.away?'<button type="button" class="g" id="cpk">Keep playing</button>':'')+'');
+  coopPicker("Who do you play?",COOP_CH===6?"Pick your hero. Your partner picks one of the others.":COOP_CH===5?"Pick your hero. Your partner picks one of the others. In a fight where neither of your heroes is there, you play and your partner watches.":"Your partner plays the other one.",opts,function(id){ad.setHost(id);coopHost()},coopMenu)}
+function coopHostPanel(msg){coopPanel('<h3>Hosting</h3><p>Ask your partner to open Chapter 3, 4, 5 or EX of Danoya Valley on their own device, tap <b>👥 Co-op</b>, choose <b>Join with a code</b> and type:</p><div class="code">'+(COOP.code||"····")+'</div><p id="cpm">'+(msg||(COOP.away?"Your partner dropped out. They can rejoin with this code while you keep playing.":"Waiting for your partner…"))+'</p><p style="font-size:.8rem;opacity:.75">You play '+COOP.hostLabel+'.'+(COOP_CH>=5?' Your partner picks their hero when they join.':' They play '+COOP.guestLabel+'.')+' Keep this screen open while they join.</p><button type="button" class="g" id="cpc">'+(COOP.away?"Stop co-op":"Cancel")+'</button>'+(COOP.away?'<button type="button" class="g" id="cpk">Keep playing</button>':'')+'');
   document.getElementById("cpc").onclick=function(){coopEnd(false);coopClose()};var k=document.getElementById("cpk");if(k)k.onclick=coopClose}
 function coopHost(){var ad=window.__coopAd||{};COOP.hostLabel=ad.hostLabel?ad.hostLabel():"your hero";COOP.guestLabel=ad.guestLabel?ad.guestLabel():"your partner";COOP.role="host";COOP.code="";coopHostPanel("Getting a code…");
   coopLoadPeer(function(err){if(err){coopHostPanel("Couldn't load co-op. Check the internet connection and try again.");COOP.role=null;return}
@@ -3422,14 +3434,14 @@ function coopHostStart(pick){if(COOP.on)return;var ad=window.__coopAd||{};try{if
   coopHint(COOP.away?"👥 "+COOP.guestLabel+" is back!":"👥 Your partner joined as "+COOP.guestLabel+". You play "+COOP.hostLabel+".",4000);COOP.away=false;
   try{window.__rec.start()}catch(e){}(function lp(){if(!COOP.on)return;try{var o=window.__rec.take();if(o.length)coopSendOps(o)}catch(e){}COOP.raf=requestAnimationFrame(lp)})();
   coopSend({t:"go",guest:COOP.guestLabel,host:COOP.hostLabel});
-  COOP.cssN=-1;COOP.cssSent=[];COOP.lastK="";COOP.lastHtml="";COOP.lastHud="";COOP.mt=setInterval(coopMirror,80);coopAudioResync()}
+  COOP.cssN=-1;COOP.cssSent=[];COOP.lastK="";COOP.lastHtml="";COOP.lastHud="";COOP.mt=setInterval(coopMirror,33);coopAudioResync()}
 /* put H.264 first in the video offer: iPhones decode it in hardware, which keeps the partner's picture smooth */
 function coopH264(sdp){try{var L=sdp.split("\r\n"),mi=-1,i;for(i=0;i<L.length;i++)if(L[i].indexOf("m=video")===0){mi=i;break}if(mi<0)return sdp;var h=[];
   for(i=mi+1;i<L.length&&L[i].indexOf("m=")!==0;i++){var r=L[i].match(/^a=rtpmap:(\d+) H264\/90000/);if(r)h.push(r[1])}if(!h.length)return sdp;
   var p=L[mi].split(" "),pt=p.slice(3);L[mi]=p.slice(0,3).concat(h,pt.filter(function(x){return h.indexOf(x)<0})).join(" ");return L.join("\r\n")}catch(e){return sdp}}
 /* drawing commands are squeezed (deflate) before sending: about 8 times less data */
 function coopB64(u){var s="";for(var i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s)}
-function coopSendOps(o){var j=JSON.stringify(o);if(!COOP.gz||!window.CompressionStream){coopSend({t:"ops",o:o});return}
+function coopSendOps(o){try{o=window.__rec.pack(o)}catch(e){}var j=JSON.stringify(o);if(!COOP.gz||!window.CompressionStream){coopSend({t:"ops",o:o});return}
   COOP.zq=(COOP.zq||Promise.resolve()).then(function(){return new Response(new Blob([j]).stream().pipeThrough(new CompressionStream("deflate-raw"))).arrayBuffer()}).then(function(b){coopSend({t:"opz",z:coopB64(new Uint8Array(b))})}).catch(function(){coopSend({t:"ops",o:o})})}
 function coopTune(call){try{var pc=call.peerConnection;if(!pc){setTimeout(function(){coopTune(call)},300);return}pc.getSenders().forEach(function(s){if(s.track&&s.track.kind==="video"){try{s.track.contentHint="motion"}catch(e){}var p=s.getParameters();if(!p.encodings||!p.encodings.length)p.encodings=[{}];p.encodings[0].maxBitrate=1000000;p.encodings[0].maxFramerate=30;p.degradationPreference="maintain-framerate";s.setParameters(p).catch(function(){})}})}catch(e){}}
 function coopLost(){if(!COOP.on){COOP.conn=null;return}coopPause();coopHint("👥 Your partner dropped out. They can rejoin with code "+COOP.code+". Keep playing!",6000)}
@@ -3472,7 +3484,8 @@ function coopHostBtn(b){var ad=window.__coopAd||{};
   if(b==="a"){if(coopDlgOpen()){if(COOP.owner==="guest"){COOP.fwd=true;try{COOP.adv()}catch(e){}COOP.fwd=false}else coopSend({t:"wait"});return}
     if(talking||ui)return;if(ad.guestA){COOP.owner="guest";COOP.ownT=Date.now();ad.guestA()}}
   else if(b==="b"){if(ad.guestB)ad.guestB()}
-  else if(b==="skill"){if(ad.guestSkill)ad.guestSkill()}}
+  else if(b==="skill"){if(ad.guestSkill)ad.guestSkill()}
+  else if(b==="ult"){try{if(window.__dunUlt5)window.__dunUlt5()}catch(e){}}}
 function coopHostTap(m){var el=$("stage");if(!el||!m.p)return;for(var i=0;i<m.p.length;i++){el=el&&el.childNodes[m.p[i]]}
   if(el&&el.nodeType!==1)el=el.parentNode;if(!el||!el.closest)return;
   if(el.closest("#exitch,#opskip,#title,#menu,#cutback"))return;
@@ -3503,13 +3516,14 @@ function coopGuestInit(){var code=coopJoinHash();COOP.role="guest";COOP.code=cod
   ["pointerdown","pointerup","click"].forEach(function(ev){mir.addEventListener(ev,function(e){var t=e.target,path=[];while(t&&t!==mir){var p=t.parentNode;path.unshift([].indexOf.call(p.childNodes,t));t=p}if(t!==mir)return;
     var r=e.target.getBoundingClientRect();coopSend({t:"tap",ev:ev,p:path,rx:r.width?(e.clientX-r.left)/r.width:.5,ry:r.height?(e.clientY-r.top)/r.height:.5});e.preventDefault();e.stopPropagation()},true)});
   var bb=$("bb");if(bb){bb.textContent="Leave";bb.dataset.cb="leave"}var ba=$("ba");if(ba)ba.dataset.cb="a";
-  var ab=document.querySelector(".ab");if(COOP_CH===5&&ab){var b=document.createElement("button");b.type="button";b.className="b";b.textContent="Skill";b.dataset.cb="skill";ab.insertBefore(b,ab.firstChild)}
+  var ab=document.querySelector(".ab");if(COOP_CH>=5&&ab){var b=document.createElement("button");b.type="button";b.className="b";b.textContent="Skill";b.dataset.cb="skill";ab.insertBefore(b,ab.firstChild);
+    setInterval(function(){var e=document.querySelector('#comir #skc [data-w="g"]'),t="Skill",bg="",op="1";if(e&&e.offsetParent!==null){var n=+e.dataset.s||0;t=n>0?n+"s":(e.dataset.n||"Skill");if(n>0){bg="linear-gradient(#0009,#0009)";op=".8"}}if(b.textContent!==t)b.textContent=t;b.style.backgroundImage=bg;b.style.opacity=op},150)}
   window.addEventListener("pointerdown",function(e){var b=e.target&&e.target.closest&&e.target.closest("[data-cb]");if(!b)return;e.preventDefault();e.stopImmediatePropagation();try{ac()}catch(x){}
     if(b.dataset.cb==="leave"){coopGuestLeave();return}coopSend({t:"btn",b:b.dataset.cb});b.classList.add("on");setTimeout(function(){b.classList.remove("on")},120)},true);
   window.addEventListener("keydown",function(e){var tg=e.target&&e.target.tagName;if(tg==="INPUT")return;var k=e.key,b=null;
-    if(k===" "||k==="Enter"||k==="e"||k==="E")b="a";else if(k==="f"||k==="F")b="skill";
+    if(k===" "||k==="Enter"||k==="e"||k==="E")b="a";else if(k==="f"||k==="F")b="skill";else if((k==="r"||k==="R")&&COOP_CH>=5)b="ult";
     if(b||k==="Escape"||k==="q"||k==="Q"||k==="r"||k==="R"){e.preventDefault();e.stopImmediatePropagation();if(b)coopSend({t:"btn",b:b})}},true);
-  var mini=document.querySelector(".mini[style*='center']");if(mini)mini.textContent="Co-op: you control your own hero · Arrows/WASD move · Space = A"+(COOP_CH===5?" · F skill":"");
+  var mini=document.querySelector(".mini[style*='center']");if(mini)mini.textContent="Co-op: you control your own hero · Arrows/WASD move · Space = A"+(COOP_CH>=5?" · F skill":"");
   window.addEventListener("pagehide",function(){coopSend({t:"bye"})});
   /* phones only allow sound to start from a tap: every tap also restarts anything that should be playing but got blocked */
   ["pointerdown","touchend","keydown"].forEach(function(ev){window.addEventListener(ev,function(){try{var c=ac();if(c&&c.state!=="running")c.resume()}catch(e){}
@@ -3545,9 +3559,9 @@ function coopGuestData(m,code){if(!m||!m.t)return;if(m.t==="ck"){coopUnchunk(m,f
       if(m.go){g.style.display="";g.className="";g.textContent="⏳ "+coopHostName()+" picks Retry or Give up"}else if(/⏳/.test(g.textContent)){g.style.display="none"}}}
   else if(m.t==="gowait"){var g3=$("cotag");if(g3){g3.style.display="";g3.className="";g3.textContent="⏳ Only "+coopHostName()+" can pick Retry or Give up"}}
   else if(m.t==="wait"){var g2=$("cotag");if(g2){g2.style.display="";g2.className="";g2.textContent="💬 Your partner presses A for this one"}}
-  else if(m.t==="ops"){COOP.uq=(COOP.uq||Promise.resolve()).then(function(){try{window.__play.push(m.o)}catch(e){}})}
+  else if(m.t==="ops"){COOP.uq=(COOP.uq||Promise.resolve()).then(function(){try{window.__play.push(window.__play.unpack(m.o))}catch(e){}})}
   else if(m.t==="opz"){COOP.uq=(COOP.uq||Promise.resolve()).then(function(){var s0=atob(m.z),u=new Uint8Array(s0.length);for(var i=0;i<s0.length;i++)u[i]=s0.charCodeAt(i);
-    return new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).text()}).then(function(t){try{window.__play.push(JSON.parse(t))}catch(e){}}).catch(function(){})}
+    return new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).text()}).then(function(t){try{window.__play.push(window.__play.unpack(JSON.parse(t)))}catch(e){}}).catch(function(){})}
   else if(m.t==="css"){if(m.id&&document.getElementById(m.id))return;var st2=document.createElement("style");if(m.id)st2.id=m.id;st2.textContent=m.c;document.head.appendChild(st2)}
   else if(m.t==="tone"){try{tone.apply(null,m.a)}catch(e){}}
   else if(m.t==="au")coopGuestAu(m);
@@ -3647,8 +3661,9 @@ function ui(){var st=document.getElementById("dvscs");if(!st){st=document.create
       setTimeout(function(){armed=0;btn.textContent="Restore code"},12000)})
     .catch(function(e){m2.className="m bad";m2.textContent=e&&e.message==="old"?"This browser is too old to open that code. Try another browser.":"That code doesn't look right. Check it was copied in full."})};
   w.querySelector("#dvx").onclick=function(){w.remove()}}
-window.__dvResetAll=function(){var SET=/^dv_(easy|easy5|lay|tspeed|vol)$/,ks=[];try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(/^(danoya-valley|dv)/.test(k)&&!SET.test(k))ks.push(k)}ks.forEach(function(k){localStorage.removeItem(k)})}catch(e){return false}
-  try{sessionStorage.removeItem("dv_back");sessionStorage.removeItem("dv_cut")}catch(e){}try{document.cookie="dv_back=;max-age=0;path=/"}catch(e){}return true};
+window.__dvResetAll=function(){var SET=/^dv_(easy|easy5|lay|tspeed|vol)$/,ks=[];try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(/^(danoya|dv)/.test(k)&&!SET.test(k))ks.push(k)}ks.forEach(function(k){localStorage.removeItem(k)})}catch(e){return false}
+  try{sessionStorage.removeItem("dv_back");sessionStorage.removeItem("dv_cut")}catch(e){}try{document.cookie="dv_back=;max-age=0;path=/"}catch(e){}try{if(/^dvback:/.test(window.name||""))window.name=""}catch(e){}
+  try{for(var i2=0;i2<localStorage.length;i2++){var k2=localStorage.key(i2);if(/^(danoya|dv)/.test(k2)&&!SET.test(k2))return false}}catch(e){}return true};
 window.__dvSaveCode=function(){var o=document.getElementById("dvsc");if(o)o.remove();ui()};
 })();
 </script>
