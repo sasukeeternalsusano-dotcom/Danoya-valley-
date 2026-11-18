@@ -46,6 +46,7 @@ a.ch span{display:block;font-size:.88rem;line-height:1.35;margin-top:3px;font-we
 .c3{--c1:#0fb8a8;--c2:#4fd86a;--sh:#0a6a66}
 .c4{--c1:#7b4bd6;--c2:#c06bff;--sh:#43237f}
 .c5{--c1:#e8a53a;--c2:#ffe27a;--sh:#8a5a12}
+.c6{--c1:#5a3ad8;--c2:#3ad8c8;--sh:#2a1a6a}
 a.ch:nth-of-type(4){animation-delay:.55s}a.ch:nth-of-type(4)::before{animation-delay:3.4s}
 .foot{margin-top:18px;font-size:.9rem;color:#fff;text-shadow:0 1px 3px #000,0 0 10px #000}
 .foot b{color:var(--orange)}
@@ -96,7 +97,7 @@ a.ch:nth-of-type(4){animation-delay:.55s}a.ch:nth-of-type(4)::before{animation-d
 <a class="ch c2" href="chapter2.html"><div class="num">2</div><span class="go">PLAY ▶</span><b>Her Turn</b><em>you are Danoya</em><span>The same valley, seen from her side.</span></a>
 <a class="ch c3" href="chapter3.html"><div class="num">3</div><span class="go">PLAY ▶</span><b>Below the Valley</b><em>together, at last</em><span>Something hums beneath the valley. Go and see.</span></a>
 <a class="ch c4" href="chapter4.html"><div class="num">4</div><span class="go">PLAY ▶</span><b>The Thin Place</b><em>after dusk</em><span>The evenings have started to feel different.</span></a>
-<a class="ch c5" href="chapter5.html"><div class="num">5</div><span class="go">PLAY ▶</span><b>The Door</b><em>the finale</em><span>One last night in the valley.</span></a>
+<a class="ch c5" href="chapter5.html"><div class="num">5</div><span class="go">PLAY ▶</span><b>The Door</b><em>the finale</em><span>One last night in the valley.</span></a> <a class="ch c6" href="chapter6.html"><div class="num" style="font-size:1.25rem">EX</div><span class="go">PLAY ▶</span><b>Valley Days</b><em>bonus · best in co-op</em><span>Farm, build, help the neighbours and take missions. Pick any of the five heroes.</span></a>
 <button class="cutbtn" id="cutbtn" type="button">🎬 CUTSCENE SELECTOR</button>
 <button class="cutbtn" id="membtn" type="button">💛 MEMORIES</button>
 <button class="cutbtn" id="albumbtn" type="button">📸 MEMORY ALBUM</button>
@@ -133,6 +134,7 @@ a.ch:nth-of-type(4){animation-delay:.55s}a.ch:nth-of-type(4)::before{animation-d
 <div class="row"><label><span>🖥 Screen layout</span><span id="lyv">Auto</span></label><div class="seg" id="lyseg"><button type="button" data-v="auto">Auto</button><button type="button" data-v="phone">📱 Phone</button><button type="button" data-v="desktop">🖥 Desktop</button></div><small id="lyh" style="display:block;margin-top:8px;font-weight:600;opacity:.85;font-size:.9rem"></small></div>
 <div class="row"><label><span>🛡 Easy mode (Chapter 3)</span><span id="ezv">Off</span></label><div class="seg" id="ezseg"><button type="button" data-v="0">Off</button><button type="button" data-v="1">On</button></div></div><div class="row"><label><span>💬 Text speed</span><span id="tsv">Normal</span></label><div class="seg" id="tsseg"><button type="button" data-v="0">Normal</button><button type="button" data-v="1">Fast</button><button type="button" data-v="2">Instant</button></div><small style="display:block;margin-top:8px;font-weight:600;opacity:.85;font-size:.9rem">How fast dialogue text appears. Instant shows each line at once; tap still moves to the next line.</small></div><div class="row"><label><span>🛡 Easy mode (Chapter 5)</span><span id="ez5v">Off</span></label><div class="seg" id="ez5seg"><button type="button" data-v="0">Off</button><button type="button" data-v="1">On</button></div></div>
 <div class="row"><label><span>💾 Save code</span></label><button class="t" id="dvsci" type="button">Copy or restore my progress</button><small style="display:block;margin-top:8px;font-weight:600;opacity:.85;font-size:.9rem">One code for the whole game: every chapter, her lantern, the names, the album and the ending. Use it to move your progress to another phone or website.</small></div>
+<div class="row"><label><span>🔄 Start over</span></label><button class="t" id="dvrst" type="button">Reset all progress</button><div id="dvrstc" hidden style="margin-top:10px;padding:12px;border-radius:12px;background:#e8836e22;border:2px solid #e8836e"><b style="display:block;margin-bottom:8px">Erase all progress? This can't be undone.</b><button class="t" id="dvrsty" type="button" style="background:#e8836e;color:#fff;border-color:#e8836e">Yes, erase everything</button> <button class="t" id="dvrstn" type="button">Keep my progress</button></div><small id="dvrstm" style="display:block;margin-top:8px;font-weight:600;opacity:.85;font-size:.9rem">Erases every chapter, her lantern, the names, the album and the ending so you can play from Chapter 1 again. Your settings stay. Copy your save code first if you might want it back.</small></div>
 <button class="bk" id="vr" type="button">Reset</button> <button class="bk" id="vc" type="button">✕ Close</button></div></div>
 <script>
 (function(){
@@ -283,8 +285,11 @@ function ui(){var st=document.getElementById("dvscs");if(!st){st=document.create
       setTimeout(function(){armed=0;btn.textContent="Restore code"},12000)})
     .catch(function(e){m2.className="m bad";m2.textContent=e&&e.message==="old"?"This browser is too old to open that code. Try another browser.":"That code doesn't look right. Check it was copied in full."})};
   w.querySelector("#dvx").onclick=function(){w.remove()}}
+window.__dvResetAll=function(){var SET=/^dv_(easy|easy5|lay|tspeed|vol)$/,ks=[];try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(/^(danoya|dv)/.test(k)&&!SET.test(k))ks.push(k)}ks.forEach(function(k){localStorage.removeItem(k)})}catch(e){return false}
+  try{sessionStorage.removeItem("dv_back");sessionStorage.removeItem("dv_cut")}catch(e){}try{document.cookie="dv_back=;max-age=0;path=/"}catch(e){}try{if(/^dvback:/.test(window.name||""))window.name=""}catch(e){}
+  try{for(var i2=0;i2<localStorage.length;i2++){var k2=localStorage.key(i2);if(/^(danoya|dv)/.test(k2)&&!SET.test(k2))return false}}catch(e){}return true};
 window.__dvSaveCode=function(){var o=document.getElementById("dvsc");if(o)o.remove();ui()};
 })();
 
-document.getElementById("dvsci").onclick=function(){window.__dvSaveCode()};</script>
+document.getElementById("dvsci").onclick=function(){window.__dvSaveCode()};(function(){var b=document.getElementById("dvrst"),m=document.getElementById("dvrstm"),c=document.getElementById("dvrstc");b.onclick=function(){c.hidden=false;b.hidden=true};document.getElementById("dvrstn").onclick=function(){c.hidden=true;b.hidden=false};document.getElementById("dvrsty").onclick=function(){if(window.__dvResetAll()){c.hidden=true;b.hidden=false;b.disabled=true;b.textContent="✓ Progress erased";m.textContent="All clear! Reloading so you can start from Chapter 1…";setTimeout(function(){location.replace(location.pathname)},1200)}else{m.textContent="This browser blocked the reset. Try closing the other Danoya Valley tabs and try again."}};var vr=document.getElementById("vr");if(vr)vr.textContent="Reset settings"})();</script>
 </body></html>
